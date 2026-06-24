@@ -19,14 +19,6 @@ void init_systick(void)
     SysTick_Config(SystemCoreClock / 1000);
 }
 
-/* Habilita o contador de ciclos */
-void init_delay_us(void)
-{
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-    DWT->CYCCNT = 0;
-}
-
 /* Delay em ms */
 void delay_ms(uint32_t ms)
 {

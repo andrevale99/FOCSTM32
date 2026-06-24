@@ -6,13 +6,15 @@
 #define INVERSOR_DEADTIME_CNT 195
 #define INVERSOR_MIN_DUTY 80
 
-#define INVERSOR_UH_GPIO 8
+#define INVERSOR_UH_GPIO 84
 #define INVERSOR_VH_GPIO 9
 #define INVERSOR_WH_GPIO 10
 
 #define INVERSOR_UL_GPIO 13
 #define INVERSOR_VL_GPIO 14
 #define INVERSOR_WL_GPIO 15
+
+#define INVERSOR_ON_OFF_GPIO 0
 
 typedef enum
 {
@@ -33,7 +35,49 @@ typedef struct
     timer_inversor_t Timer;
 } inversor_t;
 
+/**
+ * @brief Inicializa o inversor trifásico utilizando um temporizador avançado.
+ *
+ * Configura o temporizador para operação em PWM alinhado ao centro
+ * (center-aligned up-down), habilita os canais principais e complementares,
+ * ajusta o tempo morto (dead time), inicializa os registradores de comparação
+ * com duty cycle nulo e habilita as saídas do temporizador.
+ *
+ * @param[in,out] inv Ponteiro para a estrutura de configuração do inversor.
+ *                    Deve conter os parâmetros do temporizador previamente
+ *                    inicializados.
+ *
+ * @return int8_t
+ * @retval 0 Inicialização realizada com sucesso.
+ * @retval -1 Ponteiro @p inv inválido.
+ *
+ * @note Os canais CH1, CH2 e CH3 são configurados no modo PWM 1 com
+ *       preload habilitado.
+ *
+ * @note As saídas complementares (CH1N, CH2N e CH3N) também são habilitadas,
+ *       permitindo o acionamento de um inversor trifásico com ponte completa.
+ *
+ * @note O tempo morto é definido pelo valor de @ref INVERSOR_DEADTIME_CNT.
+ *
+ * @warning Esta função não inicia a contagem do temporizador. Após a
+ *          inicialização é necessário habilitar o contador para iniciar
+ *          a geração dos sinais PWM.
+ */
 int8_t inversor_init(inversor_t *inv);
+
+/**
+ * @brief Inicia o temporizador do inversor e a geração dos sinais PWM.
+ *
+ * @param[in] inv Ponteiro para a estrutura do inversor.
+ */
+void inversor_start(inversor_t *inv);
+
+/**
+ * @brief Interrompe o temporizador do inversor e a geração dos sinais PWM.
+ *
+ * @param[in] inv Ponteiro para a estrutura do inversor.
+ */
+void inversor_stop(inversor_t *inv);
 
 /**
  * @brief Atualiza o ciclo de trabalho dos três canais PWM do inversor.
@@ -112,5 +156,7 @@ uint32_t inversor_get_duty(inversor_t *, phase);
  * @return Frequência do PWM em kHz.
  */
 uint32_t inversor_get_frequency(const inversor_t *inv);
+
+int8_t inversor_get_state(void);
 
 #endif
