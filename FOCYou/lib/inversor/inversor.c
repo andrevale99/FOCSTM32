@@ -19,7 +19,7 @@ static inline void gpio_af1(GPIO_TypeDef *gpio, uint32_t pin)
     gpio->AFR[pin >> 3] |= (0x1UL << ((pin & 0x7) * 4));
 }
 
-static void init_gpio_inversor(void)
+static void init_periferico_inversor(void)
 {
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
 
@@ -47,7 +47,7 @@ int8_t inversor_init(inversor_t *inv)
     if (!inv)
         return -1;
 
-    init_gpio_inversor();
+    init_periferico_inversor();
 
     inv->Timer.advTimer->PSC = inv->Timer.prescale;
     inv->Timer.advTimer->ARR = inv->Timer.autoreload;
@@ -76,7 +76,7 @@ int8_t inversor_init(inversor_t *inv)
         TIM_CCER_CC3E | TIM_CCER_CC3NE;
 
     inv->Timer.advTimer->BDTR &= ~TIM_BDTR_DTG_Msk;
-    inv->Timer.advTimer->BDTR |= (130 << TIM_BDTR_DTG_Pos);
+    inv->Timer.advTimer->BDTR |= (INVERSOR_DEADTIME_CNT << TIM_BDTR_DTG_Pos);
 
     inv->Timer.advTimer->CCR1 = 0;
     inv->Timer.advTimer->CCR2 = 0;
@@ -103,46 +103,28 @@ int8_t inversor_set_duty(const inversor_t *inv_t,
     if (duty_a >= inv_t->Timer.autoreload)
         duty_a = inv_t->Timer.autoreload - 1;
 
+    else if (duty_a > INVERSOR_MIN_DUTY)
+        duty_a = INVERSOR_MIN_DUTY;
+
     if (duty_b >= inv_t->Timer.autoreload)
         duty_b = inv_t->Timer.autoreload - 1;
 
+    else if (duty_b > INVERSOR_MIN_DUTY)
+        duty_b = INVERSOR_MIN_DUTY;
+
     if (duty_c >= inv_t->Timer.autoreload)
         duty_c = inv_t->Timer.autoreload - 1;
+
+    else if (duty_c > INVERSOR_MIN_DUTY)
+        duty_c = INVERSOR_MIN_DUTY;
 
     inv_t->Timer.advTimer->CCR1 = duty_a;
     inv_t->Timer.advTimer->CCR2 = duty_b;
     inv_t->Timer.advTimer->CCR3 = duty_c;
 
+    inv_t->Timer.advTimer->EGR |= TIM_EGR_UG;
+
     return 0;
-}
-
-int8_t inversor_get_duty_percent(const inversor_t *inv_t, phase _phase)
-{
-    if (!inv_t)
-        return -1;
-
-    uint32_t ccr = 0;
-    uint32_t arr = inv_t->Timer.advTimer->ARR;
-
-    switch (_phase)
-    {
-    case phase_A:
-        ccr = inv_t->Timer.advTimer->CCR1;
-        break;
-
-    case phase_B:
-        ccr = inv_t->Timer.advTimer->CCR2;
-        break;
-
-    case phase_C:
-        ccr = inv_t->Timer.advTimer->CCR3;
-        break;
-
-    default:
-        return 0;
-    }
-
-    return (uint8_t)((ccr * 100U + arr / 2U) / arr);
 }
 
 uint32_t inversor_get_duty(inversor_t *inv_t, phase phase)
