@@ -3,7 +3,13 @@
 
 #include <stm32f411xe.h>
 
-#include "timer.h"
+#define INVERSOR_UH_GPIO 8
+#define INVERSOR_VH_GPIO 9
+#define INVERSOR_WH_GPIO 10
+
+#define INVERSOR_UL_GPIO 13
+#define INVERSOR_VL_GPIO 14
+#define INVERSOR_WL_GPIO 15
 
 typedef enum
 {
@@ -12,10 +18,19 @@ typedef enum
     phase_C = 2,
 } phase;
 
+typedef struct timer_inversor
+{
+    TIM_TypeDef *const advTimer;
+    const uint32_t prescale;
+    const uint32_t autoreload;
+}timer_inversor_t;
+
 typedef struct
 {
-    const timer_inversor_t *invTimer;
+    timer_inversor_t Timer;
 } inversor_t;
+
+int8_t inversor_init(inversor_t *inv);
 
 /**
  * @brief Atualiza o ciclo de trabalho dos três canais PWM do inversor.
@@ -105,5 +120,32 @@ int8_t inversor_get_duty_percent(const inversor_t *, phase);
  * @warning O valor 0 pode indicar tanto erro quanto um duty cycle de 0%.
  */
 uint32_t inversor_get_duty(inversor_t *, phase );
+
+/**
+ * @brief Obtém a frequência de saída do PWM do inversor.
+ *
+ * Calcula a frequência efetiva do PWM considerando o clock do sistema,
+ * o prescaler (PSC) e o valor de auto-reload (ARR) do temporizador
+ * configurado em modo center-aligned (contagem ascendente e descendente).
+ *
+ * A frequência retornada é expressa em kHz.
+ *
+ * Fórmula utilizada:
+ * @f[
+ * f_{PWM} = \frac{f_{CLK}}
+ *                {2 \cdot (PSC + 1) \cdot (ARR + 1)}
+ * @f]
+ *
+ * O valor retornado corresponde a:
+ * @f[
+ * f_{PWM(kHz)} = \frac{f_{PWM}}{1000}
+ * @f]
+ *
+ * @param[in] inv Ponteiro para a estrutura de configuração do timer.
+ *
+ * @return Frequência do PWM em kHz.
+ */
+uint32_t inversor_get_frequency(const inversor_t *inv);
+
 
 #endif
