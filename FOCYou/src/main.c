@@ -11,7 +11,6 @@
 #include "init_lcd16x2.h"
 
 #include "inversor.h"
-#include "init_inversor.h"
 
 const lcd16x2_handle lcd = {
     .d4.write = write_d4,
