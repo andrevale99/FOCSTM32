@@ -162,20 +162,20 @@ int8_t inversor_set_duty(const inversor_t *inv_t,
     if (!inv_t)
         return -1;
 
-    if (duty_a >= inv_t->Timer.autoreload)
-        duty_a = inv_t->Timer.autoreload - 1;
+    if (duty_a >= INVERSOR_MAX_DUTY)
+        duty_a = INVERSOR_MAX_DUTY;
 
     else if (duty_a < INVERSOR_MIN_DUTY)
         duty_a = INVERSOR_MIN_DUTY;
 
-    if (duty_b >= inv_t->Timer.autoreload)
-        duty_b = inv_t->Timer.autoreload - 1;
+    if (duty_b >= INVERSOR_MAX_DUTY)
+        duty_b = INVERSOR_MAX_DUTY;
 
     else if (duty_b < INVERSOR_MIN_DUTY)
         duty_b = INVERSOR_MIN_DUTY;
 
-    if (duty_c >= inv_t->Timer.autoreload)
-        duty_c = inv_t->Timer.autoreload - 1;
+    if (duty_c >= INVERSOR_MAX_DUTY)
+        duty_c = INVERSOR_MAX_DUTY;
 
     else if (duty_c < INVERSOR_MIN_DUTY)
         duty_c = INVERSOR_MIN_DUTY;
