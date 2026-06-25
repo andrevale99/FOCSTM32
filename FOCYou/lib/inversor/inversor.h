@@ -3,11 +3,11 @@
 
 #include <stm32f411xe.h>
 
-#define INVERSOR_DEADTIME_CNT 195
+#define INVERSOR_DEADTIME_VALUE 195
 #define INVERSOR_MIN_DUTY 80
 #define INVERSOR_MAX_DUTY 1170
 
-#define INVERSOR_UH_GPIO 84
+#define INVERSOR_UH_GPIO 8
 #define INVERSOR_VH_GPIO 9
 #define INVERSOR_WH_GPIO 10
 
@@ -143,5 +143,7 @@ uint32_t inversor_get_duty(inversor_t *, phase);
  * @return Frequência do PWM em kHz.
  */
 uint32_t inversor_get_frequency(const inversor_t *inv);
+
+uint8_t inversor_get_state(void);
 
 #endif

@@ -64,7 +64,7 @@ int main(void)
 
     while (1)
     {
-        size = sprintf(buffer, "teste");
+        size = sprintf(buffer, "%i", inversor_get_state());
         lcd16x2_write_string(&lcd, buffer, size);
         lcd16x2_send_cmd(&lcd, SECOND_LINE);
         delay_ms(500);
