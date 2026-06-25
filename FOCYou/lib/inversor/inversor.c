@@ -208,6 +208,9 @@ int8_t inversor_init(inversor_t *inv)
 
     inv->Timer.advTimer->CR1 |= TIM_CR1_ARPE;
 
+    inv->Timer.advTimer->CR2 &= ~TIM_CR2_MMS_Msk;
+    inv->Timer.advTimer->CR2 |= TIM_CR2_MMS_1;
+
     /* CH1 */
     inv->Timer.advTimer->CCMR1 |= (6 << TIM_CCMR1_OC1M_Pos);
     inv->Timer.advTimer->CCMR1 |= TIM_CCMR1_OC1PE;
