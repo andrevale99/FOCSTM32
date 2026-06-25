@@ -53,11 +53,9 @@ int main(void)
     lcd16x2_send_cmd(&lcd, DISPLAY_ON | CURSOR_ON);
 
     inversor_init(&inv);
-<<<<<<< HEAD
     inversor_set_duty(&inv, 400, 40, 1);
-=======
-    inversor_set_duty(&inv, 1170, 40, 1);
->>>>>>> inversor
+
+    inversor_start(&inv);
 
     char buffer[16];
     int size = 0;

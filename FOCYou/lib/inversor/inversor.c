@@ -1,20 +1,8 @@
 #include "inversor.h"
 
-static volatile int8_t on_off_flag = 0;
-static inversor_t *inv_local;
-
 // ===================================================
 //  STATICS
 // ===================================================
-
-static inline void inversor_APBx_AHBx_init(void)
-{
-    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
-
-    RCC->AHB1ENR |=
-        RCC_AHB1ENR_GPIOAEN |
-        RCC_AHB1ENR_GPIOBEN;
-}
 
 static inline void gpio_af1(GPIO_TypeDef *gpio, uint32_t pin)
 {
@@ -31,8 +19,14 @@ static inline void gpio_af1(GPIO_TypeDef *gpio, uint32_t pin)
     gpio->AFR[pin >> 3] |= (0x1UL << ((pin & 0x7) * 4));
 }
 
-static void inversor_gpios_init(void)
+static void init_periferico_inversor(void)
 {
+    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+
+    RCC->AHB1ENR |=
+        RCC_AHB1ENR_GPIOAEN |
+        RCC_AHB1ENR_GPIOBEN;
+
     /* CH1, CH2, CH3 */
     gpio_af1(GPIOA, INVERSOR_UH_GPIO); // PA8
     gpio_af1(GPIOA, INVERSOR_VH_GPIO); // PA9
@@ -42,49 +36,6 @@ static void inversor_gpios_init(void)
     gpio_af1(GPIOB, INVERSOR_UL_GPIO); // PB13
     gpio_af1(GPIOB, INVERSOR_VL_GPIO); // PB14
     gpio_af1(GPIOB, INVERSOR_WL_GPIO); // PB15
-
-    GPIOB->MODER &= ~GPIO_MODER_MODE0_Msk;
-    GPIOB->OTYPER &= ~GPIO_OTYPER_OT0_Msk;
-    GPIOB->OSPEEDR &= ~GPIO_OSPEEDER_OSPEEDR0;
-
-    GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD0_Msk;
-    GPIOB->PUPDR |= GPIO_PUPDR_PUPDR0_0;
-
-    SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI0_Msk;
-    SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI0_PB;
-
-    EXTI->IMR |= EXTI_IMR_IM0;
-    EXTI->RTSR &= ~EXTI_RTSR_TR0_Msk;
-    EXTI->FTSR |= EXTI_FTSR_TR0_Msk;
-
-    NVIC_SetPriority(EXTI0_IRQn, 0);
-    NVIC_EnableIRQ(EXTI0_IRQn);
-}
-
-// ===================================================
-//  INTERRUPT
-// ===================================================
-void EXTI0_IRQHandler(void)
-{
-    if (EXTI->PR & EXTI_PR_PR0)
-    {
-        if (!(GPIOB->IDR & GPIO_IDR_ID0))
-        {
-            if (on_off_flag)
-            {
-                inversor_stop(inv_local);
-                on_off_flag = 0;
-            }
-
-            else
-            {
-                inversor_start(inv_local);
-                on_off_flag = 1;
-            }
-        }
-
-        EXTI->PR = EXTI_PR_PR0;
-    }
 }
 
 // ===================================================
@@ -96,11 +47,7 @@ int8_t inversor_init(inversor_t *inv)
     if (!inv)
         return -1;
 
-    inv_local = inv;
-
-    inversor_APBx_AHBx_init();
-
-    inversor_gpios_init();
+    init_periferico_inversor();
 
     inv->Timer.advTimer->PSC = inv->Timer.prescale;
     inv->Timer.advTimer->ARR = inv->Timer.autoreload;
@@ -141,19 +88,10 @@ int8_t inversor_init(inversor_t *inv)
     /* Update registers */
     inv->Timer.advTimer->EGR |= TIM_EGR_UG;
 
-    return 0;
-}
-
-void inversor_start(inversor_t *inv)
-{
     /* Start timer */
     inv->Timer.advTimer->CR1 |= TIM_CR1_CEN;
-}
 
-void inversor_stop(inversor_t *inv)
-{
-    /* Stop timer */
-    inv->Timer.advTimer->CR1 &= ~TIM_CR1_CEN;
+    return 0;
 }
 
 int8_t inversor_set_duty(const inversor_t *inv_t,
@@ -224,9 +162,4 @@ uint32_t inversor_get_frequency(const inversor_t *inv)
             (2 * (inv->Timer.advTimer->PSC + 1) *
              (inv->Timer.advTimer->ARR + 1)) /
             1000);
-}
-
-int8_t inversor_get_state(void)
-{
-    return (int8_t)on_off_flag;
 }
