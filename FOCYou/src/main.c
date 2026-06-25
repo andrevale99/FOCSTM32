@@ -67,15 +67,14 @@ void adc_injected_setup(void)
 
     /*--------------------------------------------------
      * Prescaler ADC
-     * APB2 = 16 MHz
-     * ADC Clock = 8 MHz
+     * APB2 = 25 MHz
+     * ADC Clock = 25 MHz
      *-------------------------------------------------*/
     ADC->CCR &= ~ADC_CCR_ADCPRE;
-    ADC->CCR |= ADC_CCR_ADCPRE_0;
 
     /*--------------------------------------------------
      * Sample Time
-     * 84 ciclos para reduzir ruído
+     * 3 ciclos para reduzir ruído
      * Canal 6
      * Canal 7
      *-------------------------------------------------*/
@@ -84,8 +83,8 @@ void adc_injected_setup(void)
         (7 << (3 * 7)));
 
     ADC1->SMPR2 |=
-        (4 << (3 * 6)) |
-        (4 << (3 * 7));
+        (0 << (3 * 6)) |
+        (0 << (3 * 7));
 
     /*--------------------------------------------------
      * Trigger externo injected
@@ -117,8 +116,7 @@ void adc_injected_setup(void)
      * JSQ1 = segunda conversão
      */
 
-    ADC1->JSQR |= (6 << 5); // PA6 -> primeira
-    ADC1->JSQR |= (7 << 0); // PA7 -> segunda
+    ADC1->JSQR |= (6 << 10) | (7 << 15);
 
     ADC1->CR1 |= ADC_CR1_JEOCIE;
 
@@ -132,15 +130,13 @@ void adc_injected_setup(void)
 
 volatile int32_t ia = 0;
 volatile int32_t ib = 0;
-
 void ADC_IRQHandler(void)
 {
     if (ADC1->SR & ADC_SR_JEOC)
     {
         ADC1->SR &= ~ADC_SR_JEOC;
-        // ia = ADC1->JDR1;
-        // ib = ADC1->JDR2;
-        ia++;
+        ia = ADC1->JDR1;
+        ib = ADC1->JDR2;
     }
 }
 
@@ -167,7 +163,7 @@ int main(void)
 
     while (1)
     {
-        size = sprintf(buffer, "%i", inversor_get_state());
+        size = sprintf(buffer, "%i  %li %li", inversor_get_state(), ia, ib);
         lcd16x2_write_string(&lcd, buffer, size);
         lcd16x2_send_cmd(&lcd, SECOND_LINE);
         delay_ms(500);
