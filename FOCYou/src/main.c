@@ -138,8 +138,9 @@ void ADC_IRQHandler(void)
     if (ADC1->SR & ADC_SR_JEOC)
     {
         ADC1->SR &= ~ADC_SR_JEOC;
-        ia = ADC1->JDR1;
-        ib = ADC1->JDR2;
+        // ia = ADC1->JDR1;
+        // ib = ADC1->JDR2;
+        ia++;
     }
 }
 
@@ -154,6 +155,8 @@ int main(void)
 
     inversor_init(&inv);
     inversor_set_duty(&inv, 312, 40, 1);
+
+    adc_injected_setup();
 
     char buffer[16];
     int size = 0;
