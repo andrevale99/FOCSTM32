@@ -154,7 +154,7 @@ int main(void)
     lcd16x2_send_cmd(&lcd, DISPLAY_ON | CURSOR_ON);
 
     inversor_init(&inv);
-    inversor_set_duty(&inv, 312, 40, 1);
+    inversor_set_duty(&inv, 1150, 40, 1);
 
     adc_injected_setup();
 
@@ -167,9 +167,7 @@ int main(void)
 
     while (1)
     {
-        size = sprintf(buffer, "%ld ", ia);
-        lcd16x2_write_string(&lcd, buffer, size);
-        size = sprintf(buffer, "%ld ", ib);
+        size = sprintf(buffer, "%i", inversor_get_state());
         lcd16x2_write_string(&lcd, buffer, size);
         lcd16x2_send_cmd(&lcd, SECOND_LINE);
         delay_ms(500);
