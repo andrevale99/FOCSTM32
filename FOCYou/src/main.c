@@ -153,7 +153,7 @@ int main(void)
     lcd16x2_send_cmd(&lcd, DISPLAY_ON | CURSOR_ON);
 
     inversor_init(&inv);
-    inversor_set_duty(&inv, 312, 40, 1);
+    inversor_set_duty(&inv, 1170, 40, 1);
 
     char buffer[16];
     int size = 0;
