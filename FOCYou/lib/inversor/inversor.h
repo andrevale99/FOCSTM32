@@ -67,20 +67,6 @@ typedef struct
 int8_t inversor_init(inversor_t *inv);
 
 /**
- * @brief Inicia o temporizador do inversor e a geração dos sinais PWM.
- *
- * @param[in] inv Ponteiro para a estrutura do inversor.
- */
-void inversor_start(inversor_t *inv);
-
-/**
- * @brief Interrompe o temporizador do inversor e a geração dos sinais PWM.
- *
- * @param[in] inv Ponteiro para a estrutura do inversor.
- */
-void inversor_stop(inversor_t *inv);
-
-/**
  * @brief Atualiza o ciclo de trabalho dos três canais PWM do inversor.
  *
  * Configura os registradores de comparação (CCR1, CCR2 e CCR3) do timer
@@ -157,7 +143,5 @@ uint32_t inversor_get_duty(inversor_t *, phase);
  * @return Frequência do PWM em kHz.
  */
 uint32_t inversor_get_frequency(const inversor_t *inv);
-
-int8_t inversor_get_state(void);
 
 #endif

@@ -53,9 +53,7 @@ int main(void)
     lcd16x2_send_cmd(&lcd, DISPLAY_ON | CURSOR_ON);
 
     inversor_init(&inv);
-    inversor_set_duty(&inv, 400, 40, 1);
-
-    inversor_start(&inv);
+    inversor_set_duty(&inv, 1150, 40, 1);
 
     char buffer[16];
     int size = 0;
@@ -66,7 +64,7 @@ int main(void)
 
     while (1)
     {
-        size = sprintf(buffer, "%i", inversor_get_state());
+        size = sprintf(buffer, "teste");
         lcd16x2_write_string(&lcd, buffer, size);
         lcd16x2_send_cmd(&lcd, SECOND_LINE);
         delay_ms(500);
