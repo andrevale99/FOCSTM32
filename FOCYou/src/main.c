@@ -163,7 +163,9 @@ int main(void)
 
     while (1)
     {
-        size = sprintf(buffer,"               ");
+        size = sprintf(buffer, "               ");
+        lcd16x2_write_string(&lcd, buffer, size);
+        lcd16x2_send_cmd(&lcd, SECOND_LINE);
         size = sprintf(buffer, "%i  %li %li", inversor_get_state(), ia, ib);
         lcd16x2_write_string(&lcd, buffer, size);
         lcd16x2_send_cmd(&lcd, SECOND_LINE);
