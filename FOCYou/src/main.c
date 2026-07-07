@@ -118,7 +118,7 @@ void adc_injected_setup(void)
 
     ADC1->JSQR |= (6 << 10) | (7 << 15);
 
-    ADC1->CR1 |= ADC_CR1_JEOCIE;
+    ADC1->CR1 |= ADC_CR1_JEOCIE | ADC_CR1_SCAN;
 
     NVIC_EnableIRQ(ADC_IRQn);
 
@@ -163,6 +163,7 @@ int main(void)
 
     while (1)
     {
+        size = sprintf(buffer,"               ");
         size = sprintf(buffer, "%i  %li %li", inversor_get_state(), ia, ib);
         lcd16x2_write_string(&lcd, buffer, size);
         lcd16x2_send_cmd(&lcd, SECOND_LINE);
