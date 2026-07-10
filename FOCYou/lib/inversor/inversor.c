@@ -172,6 +172,119 @@ static void inversor_stop(void)
     inv_local->Timer.advTimer->BDTR &= ~TIM_BDTR_MOE;
 }
 
+/**
+ * @brief Configura o ADC1 para conversões injetadas sincronizadas pelo TIM1.
+ *
+ * Inicializa o ADC1 para realizar duas conversões no grupo *Injected*,
+ * acionadas automaticamente pelo sinal TRGO do TIM1. Durante a
+ * configuração são habilitados os clocks necessários, configurados os
+ * GPIOs em modo analógico, definidos o tempo de amostragem, a sequência
+ * de conversão, o disparo externo e a interrupção de fim de conversão.
+ *
+ * Configurações realizadas:
+ * - Habilita os clocks do GPIOA e do ADC1;
+ * - Configura PA6 e PA7 como entradas analógicas;
+ * - Define o prescaler do ADC;
+ * - Configura o tempo de amostragem dos canais;
+ * - Configura o TIM1_TRGO como fonte de disparo das conversões injetadas;
+ * - Define uma sequência de duas conversões no grupo *Injected*;
+ * - Habilita o modo de varredura (Scan Mode);
+ * - Habilita a interrupção de fim de conversão injetada (JEOC);
+ * - Habilita a interrupção do ADC no NVIC;
+ * - Liga o ADC1.
+ *
+ * @note As conversões são iniciadas automaticamente pelo evento TRGO
+ *       gerado pelo TIM1, não sendo necessário iniciar as conversões
+ *       por software.
+ *
+ * @note Esta função é destinada ao uso interno do driver de aquisição
+ *       de corrente do motor.
+ */
+static void adc_injected_setup(void)
+{
+    /*--------------------------------------------------
+     * Clocks
+     *-------------------------------------------------*/
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+
+    /*--------------------------------------------------
+     * PA6 e PA7 em modo analógico
+     *-------------------------------------------------*/
+    GPIOA->MODER |= (3 << GPIO_MODER_MODER6_Pos);
+    GPIOA->MODER |= (3 << GPIO_MODER_MODER7_Pos);
+
+    GPIOA->PUPDR &= ~(3 << GPIO_PUPDR_PUPD6_Pos);
+    GPIOA->PUPDR &= ~(3 << GPIO_PUPDR_PUPD7_Pos);
+
+    /*--------------------------------------------------
+     * ADC desligado durante configuração
+     *-------------------------------------------------*/
+    ADC1->CR2 &= ~ADC_CR2_ADON;
+
+    /*--------------------------------------------------
+     * Prescaler ADC
+     * APB2 = 25 MHz
+     * ADC Clock = 25 MHz
+     *-------------------------------------------------*/
+    ADC->CCR &= ~ADC_CCR_ADCPRE;
+
+    /*--------------------------------------------------
+     * Sample Time
+     * 3 ciclos para reduzir ruído
+     * Canal 6
+     * Canal 7
+     *-------------------------------------------------*/
+    ADC1->SMPR2 &= ~(
+        (7 << (3 * 6)) |
+        (7 << (3 * 7)));
+
+    ADC1->SMPR2 |=
+        (0 << (3 * 6)) |
+        (0 << (3 * 7));
+
+    /*--------------------------------------------------
+     * Trigger externo injected
+     *
+     * JEXTSEL = 0001 = TIM1_TRGO
+     * JEXTEN  = 01   = Rising Edge
+     *-------------------------------------------------*/
+    ADC1->CR2 &= ~(
+        ADC_CR2_JEXTSEL |
+        ADC_CR2_JEXTEN);
+
+    ADC1->CR2 |=
+        (0x1 << ADC_CR2_JEXTSEL_Pos) |
+        (0x1 << ADC_CR2_JEXTEN_Pos);
+
+    /*--------------------------------------------------
+     * Sequência Injected
+     *
+     * JL = 1 => 2 conversões
+     *-------------------------------------------------*/
+    ADC1->JSQR = 0;
+
+    ADC1->JSQR |= (1 << ADC_JSQR_JL_Pos);
+
+    /*
+     * Para JL=1:
+     *
+     * JSQ2 = primeira conversão
+     * JSQ1 = segunda conversão
+     */
+
+    ADC1->JSQR |= (6 << ADC_JSQR_JSQ3_Pos) | (7 << ADC_JSQR_JSQ4_Pos);
+
+    ADC1->CR1 |= ADC_CR1_JEOCIE | ADC_CR1_SCAN;
+
+    NVIC_EnableIRQ(ADC_IRQn);
+
+    /*--------------------------------------------------
+     * Habilita ADC
+     *-------------------------------------------------*/
+    ADC1->CR2 |= ADC_CR2_ADON;
+}
+
 // ===================================================
 //  INTERRUPCOES
 // ===================================================
@@ -238,6 +351,32 @@ void TIM1_UP_TIM10_IRQHandler(void)
     }
 }
 
+/**
+ * @brief Rotina de atendimento da interrupção do ADC1.
+ *
+ * Executada ao término da sequência de conversões do grupo *Injected*.
+ * A rotina verifica a ocorrência da interrupção de fim de conversão
+ * (JEOC), limpa a respectiva flag e disponibiliza os valores convertidos
+ * armazenados nos registradores JDRx para processamento pelo algoritmo
+ * de controle.
+ *
+ * @note As conversões são disparadas pelo evento TRGO do TIM1.
+ *
+ * @note Os resultados das conversões podem ser obtidos por meio dos
+ *       registradores ADC1->JDR1, ADC1->JDR2, ADC1->JDR3 e ADC1->JDR4,
+ *       conforme a sequência configurada.
+ */
+void ADC_IRQHandler(void)
+{
+    if (ADC1->SR & ADC_SR_JEOC)
+    {
+        ADC1->SR &= ~ADC_SR_JEOC;
+
+        // ia = ADC1->JDR1;
+        // ib = ADC1->JDR2;
+    }
+}
+
 // ===================================================
 //  INVERSOR
 // ===================================================
@@ -298,6 +437,9 @@ int8_t inversor_init(inversor_t *inv)
 
     /* Start timer */
     inv->Timer.advTimer->CR1 |= TIM_CR1_CEN;
+
+    // Inicializacao do ad
+    adc_injected_setup();
 
     return 0;
 }
