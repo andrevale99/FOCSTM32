@@ -110,6 +110,20 @@ static void init_gpios_inversor(void)
     NVIC_EnableIRQ(EXTI0_IRQn);
 }
 
+
+/**
+ * @brief Inicializa o TIM10 para o debounce da entrada ON/OFF.
+ *
+ * Configura o temporizador TIM10 para gerar interrupções periódicas
+ * utilizadas na eliminação do efeito de bouncing do botão conectado
+ * ao pino ON/OFF do inversor.
+ *
+ * A função habilita o clock do TIM10, configura seus registradores,
+ * habilita a interrupção de atualização e registra a interrupção
+ * correspondente no NVIC.
+ *
+ * @note Esta função é destinada ao uso interno do driver.
+ */
 static void init_timer10_inversor(void)
 {
     RCC->APB2ENR |= RCC_APB2ENR_TIM10EN;
@@ -129,12 +143,30 @@ static void init_timer10_inversor(void)
     TIM10->EGR |= TIM_EGR_UG;
 }
 
+/**
+ * @brief Habilita as saídas PWM do inversor.
+ *
+ * Atualiza os registradores do temporizador e habilita a saída
+ * principal (MOE), permitindo que os sinais PWM sejam aplicados
+ * às fases do inversor.
+ *
+ * @note Função utilizada internamente pelo driver.
+ */
 static void inversor_start(void)
 {
     inv_local->Timer.advTimer->EGR |= TIM_EGR_UG;
     inv_local->Timer.advTimer->BDTR |= TIM_BDTR_MOE;
 }
 
+/**
+ * @brief Desabilita as saídas PWM do inversor.
+ *
+ * Limpa o bit MOE (Main Output Enable) do temporizador avançado,
+ * interrompendo imediatamente os sinais PWM nas saídas do inversor.
+ *
+ * @note O temporizador continua em funcionamento; apenas as saídas
+ * PWM são desabilitadas.
+ */
 static void inversor_stop(void)
 {
     inv_local->Timer.advTimer->BDTR &= ~TIM_BDTR_MOE;
@@ -144,6 +176,15 @@ static void inversor_stop(void)
 //  INTERRUPCOES
 // ===================================================
 
+/**
+ * @brief Rotina de atendimento da interrupção EXTI0.
+ *
+ * Executada quando ocorre uma borda de descida na entrada ON/OFF.
+ * A interrupção inicia o processo de debounce habilitando o TIM10,
+ * responsável por validar o acionamento do botão.
+ *
+ * @note Handler da interrupção EXTI0.
+ */
 void EXTI0_IRQHandler(void)
 {
     EXTI->PR = EXTI_PR_PR0;
@@ -155,6 +196,18 @@ void EXTI0_IRQHandler(void)
     TIM10->CR1 |= TIM_CR1_CEN;
 }
 
+/**
+ * @brief Rotina de atendimento da interrupção de atualização do TIM10.
+ *
+ * Realiza o tratamento de debounce da entrada ON/OFF. Caso o botão
+ * permaneça pressionado após o intervalo configurado, alterna o
+ * estado do inversor entre habilitado e desabilitado.
+ *
+ * Após o processamento, o temporizador é interrompido até um novo
+ * acionamento da interrupção EXTI0.
+ *
+ * @note Handler da interrupção TIM1_UP_TIM10.
+ */
 void TIM1_UP_TIM10_IRQHandler(void)
 {
     TIM10->SR &= ~TIM_SR_UIF;
