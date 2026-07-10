@@ -44,8 +44,6 @@ int main(void)
     inversor_init(&inv);
     inversor_set_duty(&inv, 1150, 40, 1);
 
-    adc_injected_setup();
-
     char buffer[16];
     int size = 0;
 
@@ -58,7 +56,7 @@ int main(void)
         size = sprintf(buffer, "               ");
         lcd16x2_write_string(&lcd, buffer, size);
         lcd16x2_send_cmd(&lcd, SECOND_LINE);
-        size = sprintf(buffer, "%i  %li %li", inversor_get_state(), ia, ib);
+        size = sprintf(buffer, "%i  %li %li", inversor_get_state(), ADC1->JDR1, ADC1->JDR2);
         lcd16x2_write_string(&lcd, buffer, size);
         lcd16x2_send_cmd(&lcd, SECOND_LINE);
         delay_ms(500);
