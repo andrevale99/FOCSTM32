@@ -32,42 +32,17 @@ inversor_t inv = {
     },
 };
 
-int map_value(uint32_t x,
-              uint32_t in_min,
-              uint32_t in_max,
-              uint32_t out_min,
-              uint32_t out_max)
-{
-    return (x - in_min) * (out_max - out_min) /
-               (in_max - in_min) +
-           out_min;
-}
-
 int main(void)
 {
 
     init_rcc();
     init_systick();
 
-    lcd16x2_init_4bits(&lcd, init_periferico_lcd16x2);
-    lcd16x2_send_cmd(&lcd, DISPLAY_ON | CURSOR_ON);
-
     inversor_init(&inv);
     inversor_set_duty(&inv, 1150, 40, 1);
 
-    char buffer[16];
-    int size = 0;
-
-    size = sprintf(buffer, "%ldkHz", inversor_get_frequency(&inv));
-    lcd16x2_write_string(&lcd, buffer, size);
-    lcd16x2_send_cmd(&lcd, SECOND_LINE);
-
     while (1)
     {
-        size = sprintf(buffer, "%i", inversor_get_state());
-        lcd16x2_write_string(&lcd, buffer, size);
-        lcd16x2_send_cmd(&lcd, SECOND_LINE);
-        delay_ms(500);
     }
 
     return 0;
