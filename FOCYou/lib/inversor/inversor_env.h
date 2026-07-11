@@ -2,13 +2,6 @@
 
 #include "inversor.h"
 
-// Para realizar leitura dos valores
-// sem alteracao dos dados
-static const inversor_t *inv_local;
-
-volatile uint8_t debounceFlag = 0;
-volatile uint8_t start_stop = 0;
-
 // ===================================================
 //  STATICS
 // ===================================================
@@ -142,35 +135,6 @@ static void init_timer10_inversor(void)
     TIM10->CR1 |= TIM_CR1_CEN;
 
     TIM10->EGR |= TIM_EGR_UG;
-}
-
-/**
- * @brief Habilita as saídas PWM do inversor.
- *
- * Atualiza os registradores do temporizador e habilita a saída
- * principal (MOE), permitindo que os sinais PWM sejam aplicados
- * às fases do inversor.
- *
- * @note Função utilizada internamente pelo driver.
- */
-static void inversor_start(void)
-{
-    inv_local->Timer.advTimer->EGR |= TIM_EGR_UG;
-    inv_local->Timer.advTimer->BDTR |= TIM_BDTR_MOE;
-}
-
-/**
- * @brief Desabilita as saídas PWM do inversor.
- *
- * Limpa o bit MOE (Main Output Enable) do temporizador avançado,
- * interrompendo imediatamente os sinais PWM nas saídas do inversor.
- *
- * @note O temporizador continua em funcionamento; apenas as saídas
- * PWM são desabilitadas.
- */
-static void inversor_stop(void)
-{
-    inv_local->Timer.advTimer->BDTR &= ~TIM_BDTR_MOE;
 }
 
 /**
@@ -336,28 +300,4 @@ static int8_t adc_injected_setup(inversor_adc_t *conf)
     ADC1->CR2 |= ADC_CR2_ADON;
 
     return INVERSOR_OK;
-}
-
-// ===================================================
-//  INTERRUPCOES
-// ===================================================
-
-/**
- * @brief Rotina de atendimento da interrupção EXTI0.
- *
- * Executada quando ocorre uma borda de descida na entrada ON/OFF.
- * A interrupção inicia o processo de debounce habilitando o TIM10,
- * responsável por validar o acionamento do botão.
- *
- * @note Handler da interrupção EXTI0.
- */
-void EXTI0_IRQHandler(void)
-{
-    EXTI->PR = EXTI_PR_PR0;
-
-    debounceFlag = 1;
-
-    TIM10->CNT = 0;
-    TIM10->SR &= ~TIM_SR_UIF;
-    TIM10->CR1 |= TIM_CR1_CEN;
 }
