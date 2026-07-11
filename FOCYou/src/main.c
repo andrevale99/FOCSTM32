@@ -43,8 +43,8 @@ ihm_t ihm = {
     .lcd = &lcd,
 
     .on_off_bt = {
-        .GPIOx = GPIOA,
-        .gpio_pin = 0,
+        .GPIOx = GPIOB,
+        .gpio_pin = 4,
     },
 
     .setpoint_bt = {
@@ -80,9 +80,12 @@ int main(void)
     ihm_init(&ihm);
     delay_ms(2000);
 
+    ihm_menu_write(&ihm);
+
     while (1)
     {
-        ihm_menu_write(&ihm);
+        // ihm_menu_write(&ihm);
+
         delay_ms(500);
     }
 

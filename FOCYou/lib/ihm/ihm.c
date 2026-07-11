@@ -45,17 +45,29 @@ int8_t ihm_init(ihm_t *ihm)
     ihm->ki_bt.GPIOx->PUPDR |= (0x1 << (ihm->ki_bt.gpio_pin * 2));
 
     ihm_welcome_write(ihm);
+
     return 0;
 }
 
 void ihm_menu_write(ihm_t *ihm)
 {
-    // size = sprintf(buffer, "%ldkHz", inversor_get_frequency(ihm->inv));
-    // lcd16x2_write_string(ihm->lcd, buffer, size);
-    size = sprintf(buffer, "               ");
+    lcd16x2_send_cmd(ihm->lcd, CLEAR_DISPLAY);
+
+    size = sprintf(buffer, "Fpwm:%ldkHz", inversor_get_frequency(ihm->inv));
     lcd16x2_write_string(ihm->lcd, buffer, size);
-    lcd16x2_send_cmd(ihm->lcd, SECOND_LINE);
-    size = sprintf(buffer, "%i  %li %li", inversor_get_state(), ADC1->JDR1, ADC1->JDR2);
+
+    lcd16x2_send_cmd(ihm->lcd, SET_DDRAM | 0xB);
+    size = sprintf(buffer, "%s",
+                   (inversor_get_state() ? "ON" : "OFF"));
     lcd16x2_write_string(ihm->lcd, buffer, size);
+
     lcd16x2_send_cmd(ihm->lcd, SECOND_LINE);
+
+    size = sprintf(buffer, "SP:%dRPM ", 123);
+    lcd16x2_write_string(ihm->lcd, buffer, size);
+    lcd16x2_send_cmd(ihm->lcd, SECOND_LINE | 0xB);
+    size = sprintf(buffer, "%d ", 12);
+    lcd16x2_write_string(ihm->lcd, buffer, size);
+
+    lcd16x2_send_cmd(ihm->lcd, RETURN_HOME);
 }
