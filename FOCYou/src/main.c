@@ -41,15 +41,35 @@ inversor_t inv = {
 ihm_t ihm = {
     .inv = &inv,
     .lcd = &lcd,
+
+    .on_off_bt = {
+        .GPIOx = GPIOA,
+        .gpio_pin = 0,
+    },
+
+    .setpoint_bt = {
+        .GPIOx = GPIOB,
+        .gpio_pin = 0,
+    },
+
+    .kp_bt = {
+        .GPIOx = GPIOB,
+        .gpio_pin = 1,
+    },
+
+    .ki_bt = {
+        .GPIOx = GPIOB,
+        .gpio_pin = 2,
+    },
 };
 
 int main(void)
 {
-    
+
     rcc_clk_enable(RCC_CLK_HSE, true);
     rcc_switch_clk_system(RCC_CLK_HSE);
     rcc_AHB_set_prescale(AHB_DIV_1);
-    
+
     init_systick();
 
     lcd16x2_init_4bits(&lcd, init_periferico_lcd16x2);
@@ -58,6 +78,7 @@ int main(void)
     inversor_set_duty(&inv, 1150, 40, 1);
 
     ihm_init(&ihm);
+    delay_ms(2000);
 
     while (1)
     {
