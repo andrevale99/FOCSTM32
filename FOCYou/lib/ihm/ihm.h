@@ -3,6 +3,9 @@
 
 #include <stm32f411xe.h>
 
+#include <stdio.h>
+
+
 #include "lcd16x2.h"
 #include "inversor.h"
 
@@ -20,8 +23,7 @@ typedef struct ihm
 }ihm_t;
 
 
-int8_t ihm_init(ihm_t *ihm,
-                void (*init_periferico_lcd16x2)(void));
+int8_t ihm_init(ihm_t *ihm);
 
 void ihm_menu_write(ihm_t *ihm);
 
