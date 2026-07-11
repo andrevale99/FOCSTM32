@@ -17,23 +17,50 @@
 
 #define INVERSOR_ON_OFF_GPIO 0
 
+#define INVERSOR_OK 0
+#define INVERSOR_ERROR_INVERSOR_NULL -1
+#define INVERSOR_ERROR_NO_GPIOx -2
+#define INVERSOR_ERROR_NO_ADCx -3
+
 typedef enum
 {
-    phase_A = 0,
-    phase_B = 1,
-    phase_C = 2,
+    phase_A = 0, /**< Fase A */
+    phase_B,     /**< Fase B */
+    phase_C      /**< Fase C */
 } phase;
 
-typedef struct timer_inversor
-{
-    TIM_TypeDef *const advTimer;
-    uint32_t prescale;
-    uint32_t autoreload;
-} timer_inversor_t;
-
+/**
+ * @brief Configuração do temporizador do inversor.
+ */
 typedef struct
 {
-    timer_inversor_t Timer;
+    TIM_TypeDef *const advTimer; /**< Temporizador avançado utilizado pelo inversor. */
+    uint32_t prescale;           /**< Valor do prescaler. */
+    uint32_t autoreload;         /**< Valor do registrador ARR. */
+} inversor_timer_t;
+
+/**
+ * @brief Configuração do ADC utilizado pelo inversor.
+ */
+typedef struct
+{
+    GPIO_TypeDef *const GPIOx; /**< Porta GPIO utilizada pelas entradas analógicas. */
+    ADC_TypeDef *const ADCx;   /**< ADC utilizado para aquisição das correntes. */
+
+    int8_t channel_1;          /**< Canal da fase A. */
+    int8_t channel_2;          /**< Canal da fase B. */
+    int8_t channel_3;          /**< Canal da fase C (opcional). */
+
+} inversor_adc_t;
+
+/**
+ * @brief Estutura de configuracao do inversor
+ * (PWM e ADCs)
+ */
+typedef struct
+{
+    inversor_timer_t Timer;
+    inversor_adc_t adc;
 } inversor_t;
 
 /**
@@ -144,6 +171,12 @@ uint32_t inversor_get_duty(inversor_t *, phase);
  */
 uint32_t inversor_get_frequency(const inversor_t *inv);
 
+/**
+ * @brief retorna o estado do inversor
+ * 
+ * @return 0 se estiver desligado
+ * @return 1 se estiver ligado
+ */
 uint8_t inversor_get_state(void);
 
 #endif
