@@ -9,7 +9,6 @@ int8_t ihm_init(ihm_t *ihm,
 
     lcd16x2_init_4bits(ihm->lcd, init_periferico_lcd16x2);
 
-    lcd16x2_init_4bits(ihm->lcd, init_periferico_lcd16x2);
     lcd16x2_send_cmd(ihm->lcd, DISPLAY_ON | CURSOR_ON);
 
     return 0;
