@@ -29,6 +29,14 @@ inversor_t inv = {
         .prescale = 1,
         .autoreload = 1248,
     },
+
+    .adc = {
+        .GPIOx = GPIOA,
+        .ADCx = ADC1,
+        .channel_1 = 6,
+        .channel_2 = 7,
+        .channel_3 = -1,
+    },
 };
 
 int main(void)
@@ -53,6 +61,13 @@ int main(void)
 
     while (1)
     {
+        size = sprintf(buffer, "               ");
+        lcd16x2_write_string(&lcd, buffer, size);
+        lcd16x2_send_cmd(&lcd, SECOND_LINE);
+        size = sprintf(buffer, "%i  %li %li", inversor_get_state(), ADC1->JDR1, ADC1->JDR2);
+        lcd16x2_write_string(&lcd, buffer, size);
+        lcd16x2_send_cmd(&lcd, SECOND_LINE);
+        delay_ms(500);
     }
 
     return 0;
