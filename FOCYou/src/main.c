@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include <stm32f411xe.h>
 
 #include <arm_math.h>
@@ -8,10 +6,11 @@
 #include "init_systick.h"
 
 #include "rcc.h"
+#include "ihm.h"
 #include "lcd16x2.h"
 #include "inversor.h"
 
-const lcd16x2_handle lcd = {
+lcd16x2_handle lcd = {
     .d4.write = write_d4,
     .d5.write = write_d5,
     .d6.write = write_d6,
@@ -39,33 +38,30 @@ inversor_t inv = {
     },
 };
 
+ihm_t ihm = {
+    .inv = &inv,
+    .lcd = &lcd,
+};
+
 int main(void)
 {
-    init_systick();
-
+    
     rcc_clk_enable(RCC_CLK_HSE, true);
     rcc_switch_clk_system(RCC_CLK_HSE);
     rcc_AHB_set_prescale(AHB_DIV_1);
+    
+    init_systick();
 
     lcd16x2_init_4bits(&lcd, init_periferico_lcd16x2);
 
     inversor_init(&inv);
     inversor_set_duty(&inv, 1150, 40, 1);
 
-    char buffer[16];
-    int size = 0;
-
-    size = sprintf(buffer, "%ldkHz", inversor_get_frequency(&inv));
-    lcd16x2_write_string(&lcd, buffer, size);
+    ihm_init(&ihm);
 
     while (1)
     {
-        size = sprintf(buffer, "               ");
-        lcd16x2_write_string(&lcd, buffer, size);
-        lcd16x2_send_cmd(&lcd, SECOND_LINE);
-        size = sprintf(buffer, "%i  %li %li", inversor_get_state(), ADC1->JDR1, ADC1->JDR2);
-        lcd16x2_write_string(&lcd, buffer, size);
-        lcd16x2_send_cmd(&lcd, SECOND_LINE);
+        ihm_menu_write(&ihm);
         delay_ms(500);
     }
 
