@@ -30,6 +30,14 @@ inversor_t inv = {
         .prescale = 1,
         .autoreload = 1248,
     },
+
+    .adc = {
+        .GPIOx = GPIOA,
+        .ADCx = ADC1,
+        .channel_1 = 6,
+        .channel_2 = 7,
+        .channel_3 = -1,
+    },
 };
 
 int main(void)
