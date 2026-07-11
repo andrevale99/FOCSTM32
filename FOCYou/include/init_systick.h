@@ -12,14 +12,25 @@ void SysTick_Handler(void)
     msTicks++;
 }
 
-/* Inicializa SysTick para 1 ms */
+/**
+ * @brief Inicializacao do systick, timer
+ * reponsavel por realizar o delay
+ * 
+ * @note NESTE projeto, sempre inicializa
+ * o systick DEPOIS de configurar o clock
+ * do sistem (HSI, HSE ou PLL).
+ */
 void init_systick(void)
 {
     SystemCoreClockUpdate();
     SysTick_Config(SystemCoreClock / 1000);
 }
 
-/* Delay em ms */
+/**
+ * @brief Função para realizar o delay
+ * 
+ * @param ms valor em milissegundos
+ */
 void delay_ms(uint32_t ms)
 {
     uint32_t start = msTicks;
