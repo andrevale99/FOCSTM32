@@ -2,6 +2,36 @@
 
 #include "inversor_env.h"
 
+// Para realizar leitura dos valores
+// sem alteracao dos dados
+static const inversor_t *inv_local;
+volatile uint8_t debounceFlag = 0;
+volatile uint8_t start_stop = 0;
+
+// ===================================================
+//  INTERRUPCOES
+// ===================================================
+
+/**
+ * @brief Rotina de atendimento da interrupção EXTI0.
+ *
+ * Executada quando ocorre uma borda de descida na entrada ON/OFF.
+ * A interrupção inicia o processo de debounce habilitando o TIM10,
+ * responsável por validar o acionamento do botão.
+ *
+ * @note Handler da interrupção EXTI0.
+ */
+void EXTI0_IRQHandler(void)
+{
+    EXTI->PR = EXTI_PR_PR0;
+
+    debounceFlag = 1;
+
+    TIM10->CNT = 0;
+    TIM10->SR &= ~TIM_SR_UIF;
+    TIM10->CR1 |= TIM_CR1_CEN;
+}
+
 /**
  * @brief Rotina de atendimento da interrupção de atualização do TIM10.
  *
@@ -27,12 +57,10 @@ void TIM1_UP_TIM10_IRQHandler(void)
             switch (start_stop)
             {
             case 0:
-                inversor_start();
-                start_stop = 1;
+                inversor_on_off(true);
                 break;
             case 1:
-                inversor_stop();
-                start_stop = 0;
+                inversor_on_off(false);
                 break;
 
             default:
@@ -126,7 +154,7 @@ int8_t inversor_init(inversor_t *inv)
     /* Update registers */
     inv->Timer.advTimer->EGR |= TIM_EGR_UG;
 
-    inversor_stop();
+    inversor_on_off(false);
 
     /* Start timer */
     inv->Timer.advTimer->CR1 |= TIM_CR1_CEN;
@@ -200,6 +228,21 @@ uint32_t inversor_get_frequency(const inversor_t *inv)
             (2 * (inv->Timer.advTimer->PSC + 1) *
              (inv->Timer.advTimer->ARR + 1)) /
             1000);
+}
+
+void inversor_on_off(bool on_off)
+{
+    if (on_off)
+    {
+        inv_local->Timer.advTimer->EGR |= TIM_EGR_UG;
+        inv_local->Timer.advTimer->BDTR |= TIM_BDTR_MOE;
+        start_stop = 1;
+    }
+    else
+    {
+        inv_local->Timer.advTimer->BDTR &= ~TIM_BDTR_MOE;
+        start_stop = 0;
+    }
 }
 
 uint8_t inversor_get_state(void)

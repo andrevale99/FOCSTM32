@@ -1,6 +1,8 @@
 #ifndef INVERSOR_H
 #define INVERSOR_H
 
+#include <stdbool.h>
+
 #include <stm32f411xe.h>
 
 #define INVERSOR_DEADTIME_VALUE 195
@@ -170,6 +172,31 @@ uint32_t inversor_get_duty(inversor_t *, phase);
  * @return Frequência do PWM em kHz.
  */
 uint32_t inversor_get_frequency(const inversor_t *inv);
+
+/**
+ * @brief Habilita ou desabilita as saídas PWM do inversor.
+ *
+ * Controla o estado operacional do inversor por meio do bit
+ * Main Output Enable (MOE) do temporizador avançado. Quando
+ * habilitado, um evento de atualização é gerado para garantir
+ * que os registradores de preload sejam carregados antes da
+ * ativação das saídas PWM.
+ *
+ * O estado atual do inversor também é armazenado na variável
+ * interna utilizada pela função @ref inversor_get_state().
+ *
+ * @param[in] on_off Define o estado desejado do inversor:
+ *                  - true: habilita as saídas PWM;
+ *                  - false: desabilita as saídas PWM.
+ *
+ * @note Esta função não altera a configuração do temporizador nem
+ *       os valores de duty cycle, apenas habilita ou desabilita as
+ *       saídas do TIM1 por meio do bit MOE.
+ *
+ * @warning O inversor deve ter sido previamente inicializado por
+ *          @ref inversor_init().
+ */
+void inversor_on_off(bool on_off);
 
 /**
  * @brief retorna o estado do inversor
