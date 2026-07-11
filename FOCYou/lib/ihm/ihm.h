@@ -9,13 +9,18 @@
 #include "lcd16x2.h"
 #include "inversor.h"
 
+typedef struct ihm_button
+{
+GPIO_TypeDef *const GPIOx;
+int8_t gpio_pin;
+}ihm_button_t;
+
 typedef struct ihm
 {
-    GPIO_TypeDef *const GPIOx;
-    int8_t on_off_button_gpio;
-    int8_t kp_button;
-    int8_t ki_button;
-    int8_t setpoint_button;
+    ihm_button_t on_off_bt;
+    ihm_button_t kp_bt;
+    ihm_button_t ki_bt;
+    ihm_button_t setpoint_bt;
 
     lcd16x2_handle *const lcd;
 
