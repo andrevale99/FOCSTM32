@@ -20,6 +20,6 @@
 #define IHM_BUTTON_KP_GPIO 1
 
 #define IHM_GPIOx_KI GPIOB
-#define IHM_BUTTON_KI_GPIO 2
+#define IHM_BUTTON_KI_GPIO 10
 
 #endif
