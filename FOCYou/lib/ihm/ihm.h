@@ -124,7 +124,7 @@ ihm_error_code ihm_init(ihm_t *ihm);
  *       podem ser atualizados posteriormente por meio de
  *       @ref ihm_menu_write_data().
  */
-void ihm_menu_write(ihm_t *ihm);
+void ihm_menu_principal_write(ihm_t *ihm);
 
 /**
  * @brief Atualiza os valores exibidos na tela principal da IHM.
@@ -144,7 +144,7 @@ void ihm_menu_write(ihm_t *ihm);
  *       variáveis do display, reduzindo o tempo de atualização e
  *       evitando cintilação perceptível.
  */
-void ihm_menu_write_data(ihm_t *ihm,
+void ihm_menu_principal_write_data(ihm_t *ihm,
                          int fpwm,
                          bool on_off,
                          int setpoint,

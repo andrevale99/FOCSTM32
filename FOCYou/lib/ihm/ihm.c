@@ -65,7 +65,7 @@ ihm_error_code ihm_init(ihm_t *ihm)
     return IHM_OK;
 }
 
-void ihm_menu_write(ihm_t *ihm)
+void ihm_menu_principal_write(ihm_t *ihm)
 {
     lcd16x2_send_cmd(ihm->lcd, CLEAR_DISPLAY);
 
@@ -88,7 +88,7 @@ void ihm_menu_write(ihm_t *ihm)
     lcd16x2_send_cmd(ihm->lcd, RETURN_HOME);
 }
 
-void ihm_menu_write_data(ihm_t *ihm, int fpwm, bool on_off,
+void ihm_menu_principal_write_data(ihm_t *ihm, int fpwm, bool on_off,
                          int setpoint, int rpm)
 {
 
