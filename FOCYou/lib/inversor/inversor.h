@@ -19,18 +19,31 @@
 
 #define INVERSOR_ON_OFF_GPIO 0
 
-#define INVERSOR_OK 0
-#define INVERSOR_ERROR_INVERSOR_NULL -1
-#define INVERSOR_ERROR_NO_GPIOx -2
-#define INVERSOR_ERROR_NO_ADCx -3
+/**
+ * @brief Códigos de retorno do driver do inversor.
+ */
+typedef enum
+{
+    /** Operação realizada com sucesso. */
+    INVERSOR_OK = 0,
+
+    /** Ponteiro para a estrutura do inversor inválido. */
+    INVERSOR_ERROR_INVERSOR_NULL = -1,
+
+    /** Porta GPIO do ADC não configurada. */
+    INVERSOR_ERROR_NO_GPIOx = -2,
+
+    /** ADC não configurado. */
+    INVERSOR_ERROR_NO_ADCx = -3,
+
+} inversor_error_code;
 
 typedef enum
 {
-    phase_A = 0, /**< Fase A */
-    phase_B,     /**< Fase B */
-    phase_C      /**< Fase C */
-} phase;
-
+    INVERSOR_PHASE_A,
+    INVERSOR_PHASE_B,
+    INVERSOR_PHASE_C
+} inversor_phase_t;
 /**
  * @brief Configuração do temporizador do inversor.
  */
@@ -49,20 +62,23 @@ typedef struct
     GPIO_TypeDef *const GPIOx; /**< Porta GPIO utilizada pelas entradas analógicas. */
     ADC_TypeDef *const ADCx;   /**< ADC utilizado para aquisição das correntes. */
 
-    int8_t channel_1;          /**< Canal da fase A. */
-    int8_t channel_2;          /**< Canal da fase B. */
-    int8_t channel_3;          /**< Canal da fase C (opcional). */
+    int8_t channel_1; /**< Canal da fase A. */
+    int8_t channel_2; /**< Canal da fase B. */
+    int8_t channel_3; /**< Canal da fase C (opcional). */
 
 } inversor_adc_t;
 
 /**
- * @brief Estutura de configuracao do inversor
- * (PWM e ADCs)
+ * @brief Estrutura de configuração do inversor.
  */
 typedef struct
 {
+    /** Configuração do temporizador PWM. */
     inversor_timer_t Timer;
+
+    /** Configuração do ADC para aquisição das correntes. */
     inversor_adc_t adc;
+
 } inversor_t;
 
 /**
@@ -77,9 +93,10 @@ typedef struct
  *                    Deve conter os parâmetros do temporizador previamente
  *                    inicializados.
  *
- * @return int8_t
- * @retval 0 Inicialização realizada com sucesso.
- * @retval -1 Ponteiro @p inv inválido.
+ * @retval INVERSOR_OK Inicialização realizada com sucesso.
+ * @retval INVERSOR_ERROR_INVERSOR_NULL Ponteiro @p inv inválido.
+ * @retval INVERSOR_ERROR_NO_GPIOx Porta GPIO do ADC não configurada.
+ * @retval INVERSOR_ERROR_NO_ADCx ADC não configurado.
  *
  * @note Os canais CH1, CH2 e CH3 são configurados no modo PWM 1 com
  *       preload habilitado.
@@ -93,7 +110,7 @@ typedef struct
  *          inicialização é necessário habilitar o contador para iniciar
  *          a geração dos sinais PWM.
  */
-int8_t inversor_init(inversor_t *inv);
+inversor_error_code inversor_init(inversor_t *inv);
 
 /**
  * @brief Atualiza o ciclo de trabalho dos três canais PWM do inversor.
@@ -101,9 +118,8 @@ int8_t inversor_init(inversor_t *inv);
  * Configura os registradores de comparação (CCR1, CCR2 e CCR3) do timer
  * associado ao inversor, definindo o ciclo de trabalho das fases A, B e C.
  *
- * Caso algum valor de duty cycle seja maior ou igual ao valor de auto-reload
- * (ARR) configurado, ele será limitado automaticamente para
- * (ARR - 1), evitando que o valor ultrapasse a faixa válida do contador.
+ * Caso o valor seja menor que INVERSOR_MIN_DUTY ou maior que INVERSOR_MAX_DUTY
+ * eles serão limitados para essas mesmas constantes
  *
  * @param[in,out] inv_t Ponteiro para a estrutura do inversor.
  * @param[in] duty_a Valor de comparação para a fase A (CCR1).
@@ -121,10 +137,10 @@ int8_t inversor_init(inversor_t *inv);
  * @warning Esta função assume que o membro invTimer da estrutura
  *          @p inv_t foi previamente inicializado e contém ponteiros válidos.
  */
-int8_t inversor_set_duty(const inversor_t *inv_t,
-                         uint32_t duty_a,
-                         uint32_t duty_b,
-                         uint32_t duty_c);
+inversor_error_code inversor_set_duty(const inversor_t *inv_t,
+                                      uint32_t duty_a,
+                                      uint32_t duty_b,
+                                      uint32_t duty_c);
 
 /**
  * @brief Obtém o valor atual do duty cycle de uma fase do inversor.
@@ -145,7 +161,8 @@ int8_t inversor_set_duty(const inversor_t *inv_t,
  *
  * @warning O valor 0 pode indicar tanto erro quanto um duty cycle de 0%.
  */
-uint32_t inversor_get_duty(inversor_t *, phase);
+uint32_t inversor_get_duty(const inversor_t *inv_t,
+                           inversor_phase_t phase);
 
 /**
  * @brief Obtém a frequência de saída do PWM do inversor.
@@ -199,10 +216,13 @@ uint32_t inversor_get_frequency(const inversor_t *inv);
 void inversor_on_off(bool on_off);
 
 /**
- * @brief retorna o estado do inversor
- * 
- * @return 0 se estiver desligado
- * @return 1 se estiver ligado
+ * @brief Obtém o estado atual do inversor.
+ *
+ * Retorna o estado lógico utilizado pelo driver para indicar
+ * se as saídas PWM estão habilitadas.
+ *
+ * @retval 0 Inversor desabilitado.
+ * @retval 1 Inversor habilitado.
  */
 uint8_t inversor_get_state(void);
 

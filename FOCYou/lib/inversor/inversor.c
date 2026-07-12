@@ -102,7 +102,7 @@ void ADC_IRQHandler(void)
 //  INVERSOR
 // ===================================================
 
-int8_t inversor_init(inversor_t *inv)
+inversor_error_code inversor_init(inversor_t *inv)
 {
     if (!inv)
         return INVERSOR_ERROR_INVERSOR_NULL;
@@ -162,7 +162,7 @@ int8_t inversor_init(inversor_t *inv)
     return adc_injected_setup(&inv->adc);
 }
 
-int8_t inversor_set_duty(const inversor_t *inv_t,
+inversor_error_code inversor_set_duty(const inversor_t *inv_t,
                          uint32_t duty_a, uint32_t duty_b, uint32_t duty_c)
 {
     if (!inv_t)
@@ -193,7 +193,7 @@ int8_t inversor_set_duty(const inversor_t *inv_t,
     return INVERSOR_OK;
 }
 
-uint32_t inversor_get_duty(inversor_t *inv_t, phase phase)
+uint32_t inversor_get_duty(const inversor_t *inv_t, inversor_phase_t phase)
 {
     if (!inv_t)
         return 0;
@@ -202,15 +202,15 @@ uint32_t inversor_get_duty(inversor_t *inv_t, phase phase)
 
     switch (phase)
     {
-    case phase_A:
+    case INVERSOR_PHASE_A:
         ret = inv_t->Timer.advTimer->CCR1;
         break;
 
-    case phase_B:
+    case INVERSOR_PHASE_B:
         ret = inv_t->Timer.advTimer->CCR2;
         break;
 
-    case phase_C:
+    case INVERSOR_PHASE_C:
         ret = inv_t->Timer.advTimer->CCR3;
         break;
 
