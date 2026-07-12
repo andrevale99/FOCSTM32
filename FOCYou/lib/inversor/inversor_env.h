@@ -165,7 +165,7 @@ static void init_timer10_inversor(void)
  * @note Esta função é destinada ao uso interno do driver de aquisição
  *       de corrente do motor.
  */
-static int8_t adc_injected_setup(inversor_adc_t *conf)
+static inversor_error_code adc_injected_setup(inversor_adc_t *conf)
 {
 
     if (!conf->GPIOx)
