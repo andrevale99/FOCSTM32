@@ -11,6 +11,13 @@
 #include "lcd16x2.h"
 #include "inversor.h"
 
+typedef enum
+{
+    MENU_PRINCIPAL = 0,
+    MENU_SETPOINT,
+    MENU_KP,
+    MENU_KI
+} menu_t;
 
 lcd16x2_handle lcd = {
     .d4.write = write_d4,
@@ -82,13 +89,95 @@ int main(void)
     ihm_init(&ihm);
     delay_ms(2000);
 
-    ihm_menu_write(&ihm);
+    ihm_menu_principal_write(&ihm);
     delay_ms(2000);
+
+    menu_t menu_state = MENU_PRINCIPAL;
+
+    bool last_setpoint = true;
+    bool last_kp = true;
+    bool last_ki = true;
 
     while (1)
     {
-        ihm_menu_write_data(&ihm, inversor_get_frequency(&inv),
-                            inversor_get_state(), 45, 87);
+        bool setpoint = ihm.button_setpoint.GPIOx->IDR &
+                        (1 << ihm.button_setpoint.gpio_pin);
+
+        bool kp = ihm.button_kp.GPIOx->IDR &
+                  (1 << ihm.button_kp.gpio_pin);
+
+        bool ki = ihm.button_ki.GPIOx->IDR &
+                  (1 << ihm.button_ki.gpio_pin);
+
+        /* Botão Setpoint */
+        if (last_setpoint && !setpoint)
+        {
+            if (menu_state == MENU_SETPOINT)
+                menu_state = MENU_PRINCIPAL;
+            else
+                menu_state = MENU_SETPOINT;
+        }
+
+        /* Botão KP */
+        if (last_kp && !kp)
+        {
+            if (menu_state == MENU_KP)
+                menu_state = MENU_PRINCIPAL;
+            else
+                menu_state = MENU_KP;
+        }
+
+        /* Botão KI */
+        if (last_ki && !ki)
+        {
+            if (menu_state == MENU_KI)
+                menu_state = MENU_PRINCIPAL;
+            else
+                menu_state = MENU_KI;
+        }
+
+        last_setpoint = setpoint;
+        last_kp = kp;
+        last_ki = ki;
+
+        switch (menu_state)
+        {
+        case MENU_PRINCIPAL:
+
+            ihm_menu_principal_write_data(&ihm,
+                                          inversor_get_frequency(&inv),
+                                          inversor_get_state(),
+                                          45,
+                                          87);
+            break;
+
+        case MENU_SETPOINT:
+
+            ihm_menu_principal_write_data(&ihm,
+                                          inversor_get_frequency(&inv),
+                                          inversor_get_state(),
+                                          455,
+                                          87);
+            break;
+
+        case MENU_KP:
+
+            ihm_menu_principal_write_data(&ihm,
+                                          inversor_get_frequency(&inv),
+                                          inversor_get_state(),
+                                          0,
+                                          0);
+            break;
+
+        case MENU_KI:
+
+            ihm_menu_principal_write_data(&ihm,
+                                          inversor_get_frequency(&inv),
+                                          inversor_get_state(),
+                                          1,
+                                          1);
+            break;
+        }
 
         delay_ms(1000);
     }
