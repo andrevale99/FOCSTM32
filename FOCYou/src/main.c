@@ -2,6 +2,7 @@
 
 #include <arm_math.h>
 
+#include "env.h"
 #include "init_lcd16x2.h"
 #include "init_systick.h"
 
@@ -9,6 +10,7 @@
 #include "ihm.h"
 #include "lcd16x2.h"
 #include "inversor.h"
+
 
 lcd16x2_handle lcd = {
     .d4.write = write_d4,
@@ -25,16 +27,16 @@ lcd16x2_handle lcd = {
 inversor_t inv = {
     .Timer = {
         .advTimer = TIM1,
-        .prescale = 1,
-        .autoreload = 1248,
+        .prescale = TIMER_PRESCALE,
+        .autoreload = TIMER_AUTORELOAD,
     },
 
     .adc = {
         .GPIOx = GPIOA,
         .ADCx = ADC1,
-        .channel_1 = 6,
-        .channel_2 = 7,
-        .channel_3 = -1,
+        .channel_1 = INVERSOR_ADC_CHANNEL_1_GPIO,
+        .channel_2 = INVERSOR_ADC_CHANNEL_2_GPIO,
+        .channel_3 = INVERSOR_ADC_CHANNEL_3_GPIO,
     },
 };
 
@@ -42,24 +44,24 @@ ihm_t ihm = {
     .inv = &inv,
     .lcd = &lcd,
 
-    .on_off_bt = {
-        .GPIOx = GPIOB,
-        .gpio_pin = 4,
+    .button_on_off = {
+        .GPIOx = IHM_GPIOx_ON_OFF,
+        .gpio_pin = IHM_BUTTON_ON_OFF_GPIO,
     },
 
-    .setpoint_bt = {
-        .GPIOx = GPIOB,
-        .gpio_pin = 0,
+    .button_setpoint = {
+        .GPIOx = IHM_GPIOx_SETPOINT,
+        .gpio_pin = IHM_BUTTON_SETPOINT_GPIO,
     },
 
-    .kp_bt = {
-        .GPIOx = GPIOB,
-        .gpio_pin = 1,
+    .button_kp = {
+        .GPIOx = IHM_GPIOx_KP,
+        .gpio_pin = IHM_BUTTON_KP_GPIO,
     },
 
-    .ki_bt = {
-        .GPIOx = GPIOB,
-        .gpio_pin = 2,
+    .button_ki = {
+        .GPIOx = IHM_GPIOx_KI,
+        .gpio_pin = IHM_BUTTON_KI_GPIO,
     },
 };
 
@@ -81,12 +83,14 @@ int main(void)
     delay_ms(2000);
 
     ihm_menu_write(&ihm);
+    delay_ms(2000);
 
     while (1)
     {
-        // ihm_menu_write(&ihm);
+        ihm_menu_write_data(&ihm, inversor_get_frequency(&inv),
+                            inversor_get_state(), 45, 87);
 
-        delay_ms(500);
+        delay_ms(1000);
     }
 
     return 0;
