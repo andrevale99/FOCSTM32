@@ -1,7 +1,37 @@
 import numpy as np
 from numpy import pi
 
-class bldc:
+def Clarke_Transform(xa, xb, xc):
+    xalpha = 2/3 * (xa - 1/2*xb - 1/2*xc)
+    xbeta = 2/3 * (np.sqrt(3)/2*xb - np.sqrt(3)/2*xc)
+    return np.array([xalpha, xbeta])
+
+def Park_Transform(xalpha, xbeta, theta):
+    xd = xalpha*np.cos(theta) + xbeta*np.sin(theta)
+    xq = -xalpha*np.sin(theta) + xbeta*np.cos(theta)
+    return np.array([xd, xq])
+   
+def Park_Inverse_Transform(xd, xq, theta):
+    cos_t = np.cos(theta)
+    sin_t = np.sin(theta)
+    xalpha = xd*cos_t - xq*sin_t
+    xbeta  = xd*sin_t + xq*cos_t
+    return np.array([xalpha, xbeta])
+
+def Clarke_Inverse_Transform(xalpha, xbeta):
+    xa = xalpha
+    xb = (
+        -0.5*xalpha +
+        np.sqrt(3)/2*xbeta
+    )
+    xc = (
+        -0.5*xalpha -
+        np.sqrt(3)/2*xbeta
+    )
+    return np.array([xa, xb, xc])
+
+class bldc():
+
     def __init__(self, R,L,B,J,Ke,Kt,P,Vdc):
         
         self.R = R
@@ -16,6 +46,12 @@ class bldc:
         self.PHI_A = 0
         self.PHI_B = -2*pi/3
         self.PHI_C = 2*pi/3
+
+    def rads_to_rpm(self, omega):
+        return omega * 60 / (2*pi)
+    
+    def rpm_to_rads(self,rpm):
+        return rpm * 2*pi/60
 
     def simulation_open_loop(self, t0, tf, dt=1e-5, Tl=0, back_emf_trapezoidal_flag=True):
         time = np.arange(t0, tf, dt)
@@ -86,8 +122,8 @@ class bldc:
             omega_r[k+1] = omega_r[k] + domega * dt
             theta_r[k+1] = theta_r[k] + omega_r[k+1] * dt
 
-        return [time, np.array([Va,Vb,Vc]), np.array([ea,eb,ec]),
-                np.array([ia,ib,ic]), Te, omega_r, theta_r]
+        return [time, np.array([Va,Vb,Vc], dtype=np.float32), np.array([ea,eb,ec], dtype=np.float32),
+                np.array([ia,ib,ic], dtype=np.float32), Te, omega_r, theta_r]
 
     def back_emf_trapezoidal(self,theta):
         '''
@@ -110,90 +146,69 @@ class bldc:
 
         else:
             return -1 + 6*(theta-11*np.pi/6)/np.pi
-        
-        
-# ======================================
-# ======================================
-# ======================================
 
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
+    def Clarke(self, xabc):
+        return Clarke_Transform(xabc[0],xabc[1],xabc[2])
+    
+    def ClarkeInverse(self, xalphabeta):
+        return Clarke_Inverse_Transform(xalphabeta[0], xalphabeta[1])
+    
+    def Park(self, xalphabeta, theta):
+        return Park_Transform(xalphabeta[0], xalphabeta[1], theta)
 
-    # Resistencia de armadura
-    Rs = 0.386 #Ohm
+    def ParkInverse(self, xdq, theta):
+        return Park_Inverse_Transform(xdq[0],xdq[1], theta)
+    
+class svpwm:
+    def __init__(self, Hz=0, Ts=0):
+        if Ts <= 0 and Hz <= 0:
+            raise ValueError("Ts ou Hz devem ser maiores que zero.")
 
-    # Indutancia de magnetizacao
-    L = 6.53e-5 #H
+        if Ts == 0:
+            Ts = 1/Hz
 
-    # Constantes eletricas e mecanicas
-    Ke = 0.0276
-    Kt = Ke
+        if Hz == 0:
+            Hz = 1/Ts
 
-    # Torque da carga
-    Tl = 0.1
+        self.Ts = Ts
+        self.Hz = Hz
 
-    # Coeficiente de amortecimento
-    B = 6.75e-6
+    def get_sector(self, xalphabeta):
+        """
+        Retorna o setor (1 a 6), o ângulo do vetor espacial e seu módulo.
 
-    # Momento de inercia
-    J = 3.33e-6
+        Parameters
+        ----------
+        xalphabeta : array_like
+            [Valpha, Vbeta]
 
-    # Quantidade de Polos no motor
-    POLOS = 8
-    PARES_DE_POLOS = POLOS / 2
+        Returns
+        -------
+        sector : int
+            Setor do SVPWM (1 a 6)
+        angle : float
+            Ângulo do vetor espacial em radianos [0, 2π)
+        magnitude : float
+            Módulo do vetor espacial
+        """
 
-    # Amplitude da rede
-    Vm = 48*0.8 #V
+        alpha = xalphabeta[0]
+        beta = xalphabeta[1]
 
-    # Defasagens das fases
-    PHI_A = 0
-    PHI_B = -2*pi/3
-    PHI_C = 2*pi/3
+        # Módulo
+        magnitude = np.hypot(alpha, beta)
 
-    TEMPO_MAX = 0.1     # s
-    dt = 1e-5         # s
+        # Ângulo entre 0 e 2π
+        angle = np.arctan2(beta, alpha)
 
-    teste = bldc(Rs,L,B,J,Ke,Kt,PARES_DE_POLOS,Vm)
+        if angle < 0:
+            angle += 2*np.pi
 
-    time,Vabc,_,iabc,Te,omega_r,_ = teste.simulation_open_loop(0,0.10,Tl=0.1)
+        # Setor (1 a 6)
+        sector = int(angle // (np.pi/3)) + 1
 
-    plt.figure(figsize=(12, 10))
-    plt.subplot(411)
+        # Evita setor 7 por erro numérico
+        if sector > 6:
+            sector = 6
 
-    plt.title("Vabc")
-    plt.plot(time, Vabc[0], label="Va")
-    plt.plot(time, Vabc[1], label="Vb")
-    plt.plot(time, Vabc[2], label="Vc")
-
-    plt.grid()
-    plt.legend()
-
-    plt.subplot(412)
-
-    plt.title("Iabc")
-    plt.plot(time, iabc[0], label="ia")
-    plt.plot(time, iabc[1], label="ib")
-    plt.plot(time, iabc[2], label="ic")
-
-    plt.grid()
-    plt.legend()
-
-    plt.subplot(413)
-
-    plt.title("Omega_r")
-    plt.plot(time,omega_r, label='omega')
-
-    plt.grid()
-    plt.legend()
-
-    plt.subplot(414)
-
-    plt.title("Te")
-    plt.plot(time, Te, label="Te")
-
-    plt.grid()
-    plt.legend()
-
-    plt.tight_layout()
-
-    plt.show()
+        return sector, angle, magnitude
