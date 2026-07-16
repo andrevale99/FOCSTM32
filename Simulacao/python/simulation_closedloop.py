@@ -26,38 +26,6 @@ def cm_to_inches(cm):
     return cm/2.54
 
 # ========================================= 
-#   PARAMETROS MOTOR
-# =========================================
-
-# Resistencia de armadura
-Rs = 0.36 #Ohm
-
-# Indutancia de magnetizacao
-L = 6e-4 #H
-
-# Constantes eletricas e mecanicas
-Ke = 0.0276
-Kt = Ke
-
-# Torque da carga
-Tl = 0.125
-
-# Coeficiente de amortecimento
-B = 7.312e-7
-
-# Momento de inercia
-J = 4.6e-6
-
-# Quantidade de Polos no motor
-POLOS = 8
-PARES_DE_POLOS = POLOS / 2
-
-RPM_MAX = 1500
-
-I_MAX = 5
-I_MIN = -5
-
-# ========================================= 
 #   PARAMETROS REDE
 # =========================================
 
@@ -70,12 +38,49 @@ PHI_B = -2*pi/3
 PHI_C = 2*pi/3
 
 # ========================================= 
+#   PARAMETROS MOTOR
+# =========================================
+
+# Resistencia de armadura
+Rs = 0.3 #Ohm
+
+# Indutancia de magnetizacao
+L = 5e-4 #H
+
+# Constantes eletricas e mecanicas
+Ke = 0.0676
+Kt = 0.06
+
+# Torque da carga
+Tl = 0.1
+
+# Coeficiente de amortecimento
+B = 1.312e-7
+
+# Momento de inercia
+J = 4.6e-6
+
+# Quantidade de Polos no motor
+POLOS = 14
+PARES_DE_POLOS = POLOS / 2
+
+# ========================================= 
+#   PARAMETROS DOS CONTROLADORES
+# =========================================
+
+VDC_MAX = 24
+VDC_MIN = -24
+
+RPM_MAX = 1500
+RPM_MIN = -RPM_MAX
+
+# ========================================= 
 #   PARAMETROS SIMULACAO
 # =========================================
 
 ti = 0.0 #s
-tf = 0.1 #s
-dt = 1e-4 #s
+tf = 0.2 #s
+dt = 1e-5 #s
 
 time = np.arange(
     ti,
@@ -93,9 +98,9 @@ motor = BLDC(Rs,L,B,J,Ke,Kt,PARES_DE_POLOS,Vdc)
 pwm = SVPWM(Hz=10000, Vdc=Vdc)
 inverter = Inverter(Vdc=Vdc)
 
-pi_omega = PIController(Kp=0.5,Ki=0.1,Ts=dt, output_min=0, output_max=RPM_MAX)
-pi_d = PIController(Kp=1.0,Ki=0.1,Ts=dt, output_min=I_MIN, output_max=I_MAX)
-pi_q = PIController(Kp=1.0,Ki=0.1,Ts=dt, output_min=I_MIN, output_max=I_MAX)
+pi_omega = PIController(Kp=1.5,Ki=0.1,Ts=dt, output_min=RPM_MAX, output_max=0)
+pi_d = PIController(Kp=5,Ki=1.8,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
+pi_q = PIController(Kp=5,Ki=.5,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
 
 # ========================================= 
 #   SIMULACAO
@@ -106,13 +111,15 @@ motor.set_initial_conditions()
 # rpm_ref = 1000 
 # omega_ref = motor.rpm_to_rads(rpm_ref)
 
-iq_ref = .5
-id_ref = 0.5
+iq_ref = 1
+id_ref = 5
 
 log_omega = np.zeros(N)
 log_Vabc = np.zeros((N,3))
 log_iabc = np.zeros((N,3))
+log_idq = np.zeros((N,2))
 log_Te = np.zeros(N)
+log_theta = np.zeros(N)
 
 for k in range(N):
     # A. Medição (feedback do modelo)
@@ -145,36 +152,46 @@ for k in range(N):
     estados = motor.step(v_abc[0], v_abc[1], v_abc[2], Tl=Tl, dt=dt)
 
     log_omega[k] = estados['omega_r']
+    log_theta[k] = estados['theta_r']
     log_iabc[k,0] = estados["ia"]
     log_iabc[k,1] = estados["ib"]
     log_iabc[k,2] = estados["ic"]
     log_Te[k] = estados["Te"]
     log_Vabc[k] = v_abc
+    log_idq[k,0] = i_d
+    log_idq[k,1] = i_q
 
 plt.figure(figsize=(cm_to_inches(25),cm_to_inches(20)))
 
-plt.subplot(411)
+plt.subplot(511)
 plt.title(r"$V_{abc}$")
 plt.plot(time, log_Vabc, label=[r"$V_a$", r"$V_b$", r"$V_c$"])
 plt.legend()
 plt.grid()
 plt.ylabel(r"$V$")
 
-plt.subplot(412)
+plt.subplot(512)
 plt.title(r"$i_{abc}$")
 plt.plot(time, log_iabc, label=[r"$i_a$", r"$i_b$", r"$i_c$"])
 plt.legend()
 plt.grid()
 plt.ylabel(r"$A$")
 
-plt.subplot(413)
+plt.subplot(513)
+plt.title(r"$i_{dq}$")
+plt.plot(time, log_idq, label=[r"$i_d$", r"$i_q$"])
+plt.legend()
+plt.grid()
+plt.ylabel(r"$A$")
+
+plt.subplot(514)
 plt.title(r"$\omega_r$")
 plt.plot(time, log_omega, label=r'$\omega_r$')
 plt.legend()
 plt.grid()
 plt.ylabel(r"$\omega_r$")
 
-plt.subplot(414)
+plt.subplot(515)
 plt.title(r"$T_e$")
 plt.plot(time, log_Te, label=r'$T_e$')
 plt.legend()

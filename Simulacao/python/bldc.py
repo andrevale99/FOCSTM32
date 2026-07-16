@@ -55,8 +55,8 @@ class BLDC():
         self.ib = 0.0
         self.ic = 0.0
 
-        self.omega_r = 0.0
-        self.theta_r = 0.0
+        self.omega_r = 0.0001
+        self.theta_r = 0.0001
 
         self.Te = 0.0
 
@@ -336,7 +336,7 @@ class BLDC():
         self.ib = 0.0
         self.ic = 0.0
 
-        self.omega_r = 0.0
-        self.theta_r = 0.0
+        self.omega_r = 0.0001
+        self.theta_r = 0.0001
 
         self.Te = 0.0

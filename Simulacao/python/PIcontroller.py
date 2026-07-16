@@ -65,7 +65,7 @@ class PIController:
 
                 if error < 0:
 
-                    self.integral -= (
+                    self.integral += (
                         self.Ki
                         * error
                         * self.Ts
