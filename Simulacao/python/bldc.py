@@ -30,22 +30,35 @@ def Clarke_Inverse_Transform(xalpha, xbeta):
     )
     return np.array([xa, xb, xc])
 
-class bldc():
+class BLDC():
 
-    def __init__(self, R,L,B,J,Ke,Kt,P,Vdc):
-        
+    def __init__(self, R, L, B, J, Ke, Kt, P, Vdc):
+
         self.R = R
         self.L = L
-        self.J = J
         self.B = B
+        self.J = J
         self.P = P
         self.Ke = Ke
         self.Kt = Kt
         self.Vdc = Vdc
 
         self.PHI_A = 0
-        self.PHI_B = -2*pi/3
-        self.PHI_C = 2*pi/3
+        self.PHI_B = -2 * pi / 3
+        self.PHI_C = 2 * pi / 3
+
+        # ============================================================
+        # ESTADOS DO MOTOR
+        # ============================================================
+
+        self.ia = 0.0
+        self.ib = 0.0
+        self.ic = 0.0
+
+        self.omega_r = 0.0
+        self.theta_r = 0.0
+
+        self.Te = 0.0
 
     def rads_to_rpm(self, omega):
         return omega * 60 / (2*pi)
@@ -125,6 +138,165 @@ class bldc():
         return [time, np.array([Va,Vb,Vc], dtype=np.float32), np.array([ea,eb,ec], dtype=np.float32),
                 np.array([ia,ib,ic], dtype=np.float32), Te, omega_r, theta_r]
 
+    def step(self, Va, Vb, Vc, Tl=0.0, dt=1e-5):
+        """
+        Executa um passo da simulação do motor BLDC.
+
+        Parameters
+        ----------
+        Va, Vb, Vc : float
+            Tensões instantâneas aplicadas às fases A, B e C [V].
+
+        Tl : float
+            Torque de carga [N.m].
+
+        dt : float
+            Passo de integração [s].
+
+        Returns
+        -------
+        dict
+            Estados atualizados do motor.
+        """
+
+        # ============================================================
+        # 1. ÂNGULO ELÉTRICO
+        # ============================================================
+
+        theta_e = self.P * self.theta_r
+
+        theta_e = np.mod(
+            theta_e,
+            2 * np.pi
+        )
+
+
+        # ============================================================
+        # 2. FUNÇÕES DA FORÇA CONTRAELETROMOTRIZ
+        # ============================================================
+
+        fa = self.back_emf_trapezoidal(
+            theta_e + self.PHI_A
+        )
+
+        fb = self.back_emf_trapezoidal(
+            theta_e + self.PHI_B
+        )
+
+        fc = self.back_emf_trapezoidal(
+            theta_e + self.PHI_C
+        )
+
+
+        # ============================================================
+        # 3. FORÇAS CONTRAELETROMOTRIZES
+        # ============================================================
+
+        ea = self.Ke * self.omega_r * fa
+
+        eb = self.Ke * self.omega_r * fb
+
+        ec = self.Ke * self.omega_r * fc
+
+
+        # ============================================================
+        # 4. DERIVADAS DAS CORRENTES
+        # ============================================================
+
+        dia = (
+            Va
+            - self.R * self.ia
+            - ea
+        ) / self.L
+
+        dib = (
+            Vb
+            - self.R * self.ib
+            - eb
+        ) / self.L
+
+        dic = (
+            Vc
+            - self.R * self.ic
+            - ec
+        ) / self.L
+
+
+        # ============================================================
+        # 5. INTEGRAÇÃO DAS CORRENTES
+        # ============================================================
+
+        self.ia += dia * dt
+
+        self.ib += dib * dt
+
+        self.ic += dic * dt
+
+
+        # ============================================================
+        # 6. TORQUE ELETROMAGNÉTICO
+        # ============================================================
+
+        self.Te = self.Kt * (
+
+            self.ia * fa
+            + self.ib * fb
+            + self.ic * fc
+
+        )
+
+
+        # ============================================================
+        # 7. DINÂMICA MECÂNICA
+        # ============================================================
+
+        domega = (
+
+            self.Te
+            - Tl
+            - self.B * self.omega_r
+
+        ) / self.J
+
+
+        # ============================================================
+        # 8. INTEGRAÇÃO DA VELOCIDADE
+        # ============================================================
+
+        self.omega_r += domega * dt
+
+
+        # ============================================================
+        # 9. INTEGRAÇÃO DA POSIÇÃO
+        # ============================================================
+
+        self.theta_r += self.omega_r * dt
+
+
+        # ============================================================
+        # 10. RETORNO DOS ESTADOS
+        # ============================================================
+
+        return {
+
+            "ia": self.ia,
+            "ib": self.ib,
+            "ic": self.ic,
+
+            "ea": ea,
+            "eb": eb,
+            "ec": ec,
+
+            "Te": self.Te,
+
+            "omega_r": self.omega_r,
+
+            "theta_r": self.theta_r,
+
+            "theta_e": theta_e
+
+        }
+
     def back_emf_trapezoidal(self,theta):
         '''
         Back-EMF trapezoidal normalizada (-1 a +1).
@@ -159,223 +331,12 @@ class bldc():
     def ParkInverse(self, xdq, theta):
         return Park_Inverse_Transform(xdq[0],xdq[1], theta)
     
-class svpwm:
+    def set_initial_conditions(self):
+        self.ia = 0.0
+        self.ib = 0.0
+        self.ic = 0.0
 
-    def __init__(self, Hz=0, Ts=0, Vdc=0):
+        self.omega_r = 0.0
+        self.theta_r = 0.0
 
-        if Vdc <= 0:
-            raise ValueError(
-                "Vdc deve ser maior que zero."
-            )
-
-        if Ts <= 0 and Hz <= 0:
-            raise ValueError(
-                "Ts ou Hz devem ser maiores que zero."
-            )
-
-        if Ts == 0:
-            Ts = 1 / Hz
-
-        if Hz == 0:
-            Hz = 1 / Ts
-
-        self.Vdc = Vdc
-        self.Ts = Ts
-        self.Hz = Hz
-
-
-    def modulate(self, Valpha, Vbeta):
-
-        # Transformação inversa de Clarke
-        Va_ref = Valpha
-
-        Vb_ref = (
-            -0.5 * Valpha +
-            np.sqrt(3) / 2 * Vbeta
-        )
-
-        Vc_ref = (
-            -0.5 * Valpha -
-            np.sqrt(3) / 2 * Vbeta
-        )
-
-        # Maior e menor tensão
-        Vmax = max(
-            Va_ref,
-            Vb_ref,
-            Vc_ref
-        )
-
-        Vmin = min(
-            Va_ref,
-            Vb_ref,
-            Vc_ref
-        )
-
-        # Tensão de modo comum
-        Voffset = -0.5 * (
-            Vmax + Vmin
-        )
-
-        # Tensões moduladas
-        Va_mod = Va_ref + Voffset
-        Vb_mod = Vb_ref + Voffset
-        Vc_mod = Vc_ref + Voffset
-
-        # Duty cycles
-        duty_a = (
-            Va_mod / self.Vdc
-            + 0.5
-        )
-
-        duty_b = (
-            Vb_mod / self.Vdc
-            + 0.5
-        )
-
-        duty_c = (
-            Vc_mod / self.Vdc
-            + 0.5
-        )
-
-        return np.clip(
-            np.array([
-                duty_a,
-                duty_b,
-                duty_c
-            ]),
-            0.0,
-            1.0
-        )
-
-
-    def get_sector(self, xalphabeta):
-
-        alpha = xalphabeta[0]
-        beta = xalphabeta[1]
-
-        magnitude = np.hypot(
-            alpha,
-            beta
-        )
-
-        angle = np.mod(
-            np.arctan2(beta, alpha),
-            2 * np.pi
-        )
-
-        sector = int(
-            angle // (np.pi / 3)
-        ) + 1
-
-        if sector > 6:
-            sector = 6
-
-        return (
-            sector,
-            angle,
-            magnitude
-        )
-    
-class PIController:
-
-    def __init__(self, Kp, Ki, Ts, output_min=None, output_max=None):
-
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Ts = Ts
-
-        self.output_min = output_min
-        self.output_max = output_max
-
-        self.integral = 0.0
-
-    def update(self, error):
-
-        # Ação proporcional
-        proportional = self.Kp * error
-
-        # Atualização da ação integral
-        self.integral += self.Ki * error * self.Ts
-
-        # Saída antes da saturação
-        output = proportional + self.integral
-
-        # Saturação da saída
-        if self.output_max is not None:
-            if output > self.output_max:
-                output = self.output_max
-
-        if self.output_min is not None:
-            if output < self.output_min:
-                output = self.output_min
-
-        return output
-
-    def reset(self):
-
-        self.integral = 0.0
-
-import numpy as np
-
-
-class Inverter:
-
-    def __init__(self, Vdc):
-
-        self.Vdc = Vdc
-
-    def duty_to_pole_voltage(self, duty):
-
-        """
-        Converte o duty cycle na tensão média do polo da fase.
-
-        duty = 0  -> 0 V
-        duty = 1  -> Vdc
-        """
-
-        return duty * self.Vdc
-
-    def output_voltage(self, duty_a, duty_b, duty_c):
-
-        """
-        Calcula as tensões de fase aplicadas ao motor.
-
-        Entrada:
-            duty_a
-            duty_b
-            duty_c
-
-        Saída:
-            Va
-            Vb
-            Vc
-        """
-
-        # Limitação dos duty cycles
-        duty_a = np.clip(duty_a, 0.0, 1.0)
-        duty_b = np.clip(duty_b, 0.0, 1.0)
-        duty_c = np.clip(duty_c, 0.0, 1.0)
-
-        # Tensões dos polos em relação ao barramento negativo
-        Va_pole = duty_a * self.Vdc
-        Vb_pole = duty_b * self.Vdc
-        Vc_pole = duty_c * self.Vdc
-
-        # Tensão do ponto neutro virtual
-        Vn = (
-            Va_pole +
-            Vb_pole +
-            Vc_pole
-        ) / 3.0
-
-        # Tensões de fase
-        Va = Va_pole - Vn
-        Vb = Vb_pole - Vn
-        Vc = Vc_pole - Vn
-
-        return np.array([
-            Va,
-            Vb,
-            Vc
-        ])
+        self.Te = 0.0
