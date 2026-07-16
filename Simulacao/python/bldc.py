@@ -160,55 +160,222 @@ class bldc():
         return Park_Inverse_Transform(xdq[0],xdq[1], theta)
     
 class svpwm:
-    def __init__(self, Hz=0, Ts=0):
+
+    def __init__(self, Hz=0, Ts=0, Vdc=0):
+
+        if Vdc <= 0:
+            raise ValueError(
+                "Vdc deve ser maior que zero."
+            )
+
         if Ts <= 0 and Hz <= 0:
-            raise ValueError("Ts ou Hz devem ser maiores que zero.")
+            raise ValueError(
+                "Ts ou Hz devem ser maiores que zero."
+            )
 
         if Ts == 0:
-            Ts = 1/Hz
+            Ts = 1 / Hz
 
         if Hz == 0:
-            Hz = 1/Ts
+            Hz = 1 / Ts
 
+        self.Vdc = Vdc
         self.Ts = Ts
         self.Hz = Hz
 
+
+    def modulate(self, Valpha, Vbeta):
+
+        # Transformação inversa de Clarke
+        Va_ref = Valpha
+
+        Vb_ref = (
+            -0.5 * Valpha +
+            np.sqrt(3) / 2 * Vbeta
+        )
+
+        Vc_ref = (
+            -0.5 * Valpha -
+            np.sqrt(3) / 2 * Vbeta
+        )
+
+        # Maior e menor tensão
+        Vmax = max(
+            Va_ref,
+            Vb_ref,
+            Vc_ref
+        )
+
+        Vmin = min(
+            Va_ref,
+            Vb_ref,
+            Vc_ref
+        )
+
+        # Tensão de modo comum
+        Voffset = -0.5 * (
+            Vmax + Vmin
+        )
+
+        # Tensões moduladas
+        Va_mod = Va_ref + Voffset
+        Vb_mod = Vb_ref + Voffset
+        Vc_mod = Vc_ref + Voffset
+
+        # Duty cycles
+        duty_a = (
+            Va_mod / self.Vdc
+            + 0.5
+        )
+
+        duty_b = (
+            Vb_mod / self.Vdc
+            + 0.5
+        )
+
+        duty_c = (
+            Vc_mod / self.Vdc
+            + 0.5
+        )
+
+        return np.clip(
+            np.array([
+                duty_a,
+                duty_b,
+                duty_c
+            ]),
+            0.0,
+            1.0
+        )
+
+
     def get_sector(self, xalphabeta):
-        """
-        Retorna o setor (1 a 6), o ângulo do vetor espacial e seu módulo.
-
-        Parameters
-        ----------
-        xalphabeta : array_like
-            [Valpha, Vbeta]
-
-        Returns
-        -------
-        sector : int
-            Setor do SVPWM (1 a 6)
-        angle : float
-            Ângulo do vetor espacial em radianos [0, 2π)
-        magnitude : float
-            Módulo do vetor espacial
-        """
 
         alpha = xalphabeta[0]
         beta = xalphabeta[1]
 
-        # Módulo
-        magnitude = np.hypot(alpha, beta)
+        magnitude = np.hypot(
+            alpha,
+            beta
+        )
 
-        # Ângulo entre 0 e 2π
-        angle = np.arctan2(beta, alpha)
+        angle = np.mod(
+            np.arctan2(beta, alpha),
+            2 * np.pi
+        )
 
-        if angle < 0:
-            angle += 2*np.pi
+        sector = int(
+            angle // (np.pi / 3)
+        ) + 1
 
-        # Setor (1 a 6)
-        sector = int(angle // (np.pi/3)) + 1
-
-        # Evita setor 7 por erro numérico
         if sector > 6:
             sector = 6
 
-        return sector, angle, magnitude
+        return (
+            sector,
+            angle,
+            magnitude
+        )
+    
+class PIController:
+
+    def __init__(self, Kp, Ki, Ts, output_min=None, output_max=None):
+
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Ts = Ts
+
+        self.output_min = output_min
+        self.output_max = output_max
+
+        self.integral = 0.0
+
+    def update(self, error):
+
+        # Ação proporcional
+        proportional = self.Kp * error
+
+        # Atualização da ação integral
+        self.integral += self.Ki * error * self.Ts
+
+        # Saída antes da saturação
+        output = proportional + self.integral
+
+        # Saturação da saída
+        if self.output_max is not None:
+            if output > self.output_max:
+                output = self.output_max
+
+        if self.output_min is not None:
+            if output < self.output_min:
+                output = self.output_min
+
+        return output
+
+    def reset(self):
+
+        self.integral = 0.0
+
+import numpy as np
+
+
+class Inverter:
+
+    def __init__(self, Vdc):
+
+        self.Vdc = Vdc
+
+    def duty_to_pole_voltage(self, duty):
+
+        """
+        Converte o duty cycle na tensão média do polo da fase.
+
+        duty = 0  -> 0 V
+        duty = 1  -> Vdc
+        """
+
+        return duty * self.Vdc
+
+    def output_voltage(self, duty_a, duty_b, duty_c):
+
+        """
+        Calcula as tensões de fase aplicadas ao motor.
+
+        Entrada:
+            duty_a
+            duty_b
+            duty_c
+
+        Saída:
+            Va
+            Vb
+            Vc
+        """
+
+        # Limitação dos duty cycles
+        duty_a = np.clip(duty_a, 0.0, 1.0)
+        duty_b = np.clip(duty_b, 0.0, 1.0)
+        duty_c = np.clip(duty_c, 0.0, 1.0)
+
+        # Tensões dos polos em relação ao barramento negativo
+        Va_pole = duty_a * self.Vdc
+        Vb_pole = duty_b * self.Vdc
+        Vc_pole = duty_c * self.Vdc
+
+        # Tensão do ponto neutro virtual
+        Vn = (
+            Va_pole +
+            Vb_pole +
+            Vc_pole
+        ) / 3.0
+
+        # Tensões de fase
+        Va = Va_pole - Vn
+        Vb = Vb_pole - Vn
+        Vc = Vc_pole - Vn
+
+        return np.array([
+            Va,
+            Vb,
+            Vc
+        ])
