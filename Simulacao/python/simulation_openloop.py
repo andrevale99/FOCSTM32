@@ -114,7 +114,6 @@ def plot_space_vector(Xalphabeta):
     plt.axis('equal')  # Importante para manter a escala correta e não deformar o círculo
     plt.legend()
 
-
 def animate_space_vector(time, Xalphabeta, interval_ms=20):
     """
     Cria uma animação do vetor espacial no plano alpha-beta.
@@ -210,46 +209,43 @@ def plot_simulation_all_data(time,
 # =====================================================================
 # =====================================================================
 
+# Amplitude da rede
+Vdc = 24 #V
+
 # Resistencia de armadura
-Rs = 0.6 #Ohm
+Rs = 0.36 #Ohm
 
 # Indutancia de magnetizacao
-L = 5e-3 #H
+L = 6e-4 #H
 
 # Constantes eletricas e mecanicas
 Ke = 0.0276
 Kt = Ke
 
 # Torque da carga
-Tl = 0.0
+Tl = 0.125
 
 # Coeficiente de amortecimento
 B = 7.312e-7
 
 # Momento de inercia
-J = 7.312e-6
+J = 4.6e-6
 
 # Quantidade de Polos no motor
-POLOS = 7
+POLOS = 8
 PARES_DE_POLOS = POLOS / 2
-
-# Amplitude da rede
-Vdc = 12 #V
 
 # Defasagens das fases
 PHI_A = 0
 PHI_B = -2*pi/3
 PHI_C = 2*pi/3
 
-ti = 0.0
-tf = 0.1     # s
-dt = 1e-4         # s
+ti = 0.0 #s
+tf = 0.1 #s
+dt = 1e-4 #s
 
 bldc1 = bldc(Rs,L,B,J,Ke,Kt,PARES_DE_POLOS,Vdc)
-svpwm1 = svpwm(Hz=10000)
-
-sector, angle, mag = svpwm1.get_sector(np.array([1.0, 1.0]))
-
+svpwm1 = svpwm(Hz=10000, Vdc=Vdc)
 
 time,Vabc,eabc,iabc,Te,omega_r,theta_r = bldc1.simulation_open_loop(t0=ti,tf=tf,dt=dt,
                                                            Tl=Tl, 
@@ -264,26 +260,26 @@ Vdq = bldc1.Park(Valphabeta, theta_e)
 # plot_simulation_data_2(time, Valphabeta.T, ["Valpha e Vbeta",["Valpha","Vbeta"], "s", "V"],
 #                        Vdq.T, ["Vd e Vq",["Vd","Vq"], "s", "V"])
 
-# plot_simulation_all_data(
-#     time=time,
-#     eabc=eabc.T,
-#     iabc=iabc.T,
-#     omega_r=bldc1.rads_to_rpm(omega_r),
-#     Te=Te,
-#     Xalphabeta=Valphabeta.T,
-#     XalphabetaLabels=[
-#         "Valpha e Vbeta",
-#         ["Valpha", "Vbeta"],
-#         "s",
-#         "V"
-#     ],
-#     Xdq=Vdq.T,
-#     XdqLabels=[
-#         "Vd e Vq",
-#         ["Vd", "Vq"],
-#         "s",
-#         "V"
-#     ]
-# )
+plot_simulation_all_data(
+    time=time,
+    eabc=eabc.T,
+    iabc=iabc.T,
+    omega_r=bldc1.rads_to_rpm(omega_r),
+    Te=Te,
+    Xalphabeta=Valphabeta.T,
+    XalphabetaLabels=[
+        "Valpha e Vbeta",
+        ["Valpha", "Vbeta"],
+        "s",
+        "V"
+    ],
+    Xdq=Vdq.T,
+    XdqLabels=[
+        "Vd e Vq",
+        ["Vd", "Vq"],
+        "s",
+        "V"
+    ]
+)
 
-animate_space_vector(time, Valphabeta.T, interval_ms=10)
+# animate_space_vector(time, Valphabeta.T, interval_ms=5)
