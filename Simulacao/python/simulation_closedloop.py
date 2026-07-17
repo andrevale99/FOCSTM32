@@ -42,26 +42,26 @@ Vdc = 12 #V
 # =========================================
 
 # Resistencia de armadura
-Rs = 0.6 #Ohm
+Rs = 1.5 #Ohm
 
 # Indutancia de magnetizacao
-L = 5e-4 #H
+L = 50e-3 #H
 
 # Constantes eletricas e mecanicas
-Ke = 0.0176
+Ke = 0.850
 Kt = Ke
 
 # Torque da carga
-Tl = 0.1
+Tl = 0.0
 
 # Coeficiente de amortecimento
-B = 1.312e-4
+B = 1e-3
 
 # Momento de inercia
-J = 4.6e-6
+J = 0.0036013854
 
 # Quantidade de Polos no motor
-POLOS = 14
+POLOS = 8
 PARES_DE_POLOS = POLOS / 2
 
 # ========================================= 
@@ -72,14 +72,14 @@ VDC_MAX = Vdc
 VDC_MIN = -Vdc
 
 PI_IQ_MAX = 5
-PI_IQ_MIN = -5
+PI_IQ_MIN = -PI_IQ_MAX
 
 # ========================================= 
 #   PARAMETROS SIMULACAO
 # =========================================
 
 ti = 0.0 #s
-tf = 0.1 #s
+tf = 1 #s
 dt = 1e-5 #s
 
 time = np.arange(
@@ -98,10 +98,30 @@ motor = BLDC(Rs,L,B,J,Ke,Kt,PARES_DE_POLOS,Vdc)
 pwm = SVPWM(Hz=10000, Vdc=Vdc)
 inverter = Inverter(Vdc=Vdc)
 
-pi_omega = PIController(Kp=1,Ki=0.1,Ts=dt, 
+# ========================================= 
+#   CONTROLADORES
+# =========================================
+
+dtOmega = 5e-4  #s
+kpOmega = 2
+kiOmega = 0.5
+
+dtId = 5e-4     #s
+kpId = 10
+kiId = 5
+
+dtIq = 5e-4 #s
+kpIq = 10
+kiIq = 5
+
+pi_omega = PIController(Kp=kpOmega,Ki=kiOmega,Ts=dtOmega, 
                         output_min=PI_IQ_MIN, output_max=PI_IQ_MAX)
-pi_d = PIController(Kp=5,Ki=2,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
-pi_q = PIController(Kp=5,Ki=2,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
+
+pi_d = PIController(Kp=kpId,Ki=kiId,Ts=dtId, 
+                    output_min=VDC_MIN, output_max=VDC_MAX)
+
+pi_q = PIController(Kp=kpIq,Ki=kiIq,Ts=dtIq, 
+                    output_min=VDC_MIN, output_max=VDC_MAX)
 
 # ========================================= 
 #   SIMULACAO
@@ -112,7 +132,7 @@ motor.set_initial_conditions()
 # iq_ref = 0
 id_ref = 0     # Em motores de ímãs permanentes, d-axis ref é geralmente 0
 
-rpm_ref = 200  # Exemplo: 100 RPM
+rpm_ref = 20
 omega_ref = rpm_to_rads(rpm_ref)
 print(omega_ref)
 
