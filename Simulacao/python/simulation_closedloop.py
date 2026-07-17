@@ -10,7 +10,7 @@ from bldc import BLDC, rpm_to_rads
 from SVPWM import SVPWM
 
 PATH = os.getcwd()
-print(f'PATH = {PATH + '/'}')
+print(f'PATH = {PATH + "/"}')
 # print(os.listdir(PATH))
 
 plt.rcParams.update({
@@ -30,7 +30,12 @@ def cm_to_inches(cm):
 # =========================================
 
 # Amplitude da rede
-Vdc = 24 #V
+Vdc = 12 #V
+
+# Defasagens das fases
+# PHI_A = 0
+# PHI_B = -2*pi/3
+# PHI_C = 2*pi/3
 
 # ========================================= 
 #   PARAMETROS MOTOR
@@ -40,41 +45,41 @@ Vdc = 24 #V
 Rs = 0.6 #Ohm
 
 # Indutancia de magnetizacao
-L = 2e-4 #H
+L = 5e-4 #H
 
 # Constantes eletricas e mecanicas
-Ke = 0.05
+Ke = 0.0676
 Kt = Ke
 
 # Torque da carga
 Tl = 0.1
 
 # Coeficiente de amortecimento
-B = 2e-3
+B = 1.312e-7
 
 # Momento de inercia
-J = 1e-4
+J = 4.6e-6
 
 # Quantidade de Polos no motor
-POLOS = 8
+POLOS = 14
 PARES_DE_POLOS = POLOS / 2
 
 # ========================================= 
 #   PARAMETROS DOS CONTROLADORES
 # =========================================
 
-VDC_MAX = 12
-VDC_MIN = -VDC_MAX
+VDC_MAX = Vdc
+VDC_MIN = -Vdc
 
-PI_IQ_MAX = 20
-PI_IQ_MIN = -PI_IQ_MAX
+PI_IQ_MAX = 10
+PI_IQ_MIN = -10
 
 # ========================================= 
 #   PARAMETROS SIMULACAO
 # =========================================
 
 ti = 0.0 #s
-tf = 0.5 #s
+tf = 0.1 #s
 dt = 1e-5 #s
 
 time = np.arange(
@@ -95,8 +100,8 @@ inverter = Inverter(Vdc=Vdc)
 
 pi_omega = PIController(Kp=1,Ki=0.1,Ts=dt, 
                         output_min=PI_IQ_MIN, output_max=PI_IQ_MAX)
-pi_d = PIController(Kp=2,Ki=0.2,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
-pi_q = PIController(Kp=2,Ki=0.2,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
+pi_d = PIController(Kp=5,Ki=1.8,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
+pi_q = PIController(Kp=5,Ki=2,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
 
 # ========================================= 
 #   SIMULACAO
@@ -104,10 +109,10 @@ pi_q = PIController(Kp=2,Ki=0.2,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
 
 motor.set_initial_conditions()
 
-# iq_ref = 4
+# iq_ref = 0
 id_ref = 0     # Em motores de ímãs permanentes, d-axis ref é geralmente 0
 
-rpm_ref = 50  # Exemplo: 800 RPM
+rpm_ref = 180  # Exemplo: 100 RPM
 omega_ref = rpm_to_rads(rpm_ref)
 print(omega_ref)
 
@@ -119,7 +124,6 @@ log_Te = np.zeros(N)
 log_theta = np.zeros(N)
 log_iq_ref = np.zeros(N)
 log_duties = np.zeros((N,3))
-log_theta = np.zeros(N)
 
 for k in range(N):
     # A. Medição (feedback do modelo)
@@ -138,6 +142,10 @@ for k in range(N):
     # lambda_beta += (r*i_beta + v_beta)*dt
 
     i_d, i_q = motor.Park(np.array([i_alpha, i_beta]), theta_e)
+
+    # Termos de feedforward
+    # Vd_ff = -omega_e * motor.L * i_q
+    # Vq_ff = (omega_e * motor.L * i_d) + (omega_e * motor.Ke)
     
     # D. Controle PI (Loop de Corrente)
     vd_ref = pi_d.update(id_ref, i_d)
@@ -161,12 +169,12 @@ for k in range(N):
     log_iabc[k,0] = estados["ia"]
     log_iabc[k,1] = estados["ib"]
     log_iabc[k,2] = estados["ic"]
-    log_theta[k] = estados["theta_e"]
     log_Te[k] = estados["Te"]
     log_Vabc[k] = v_abc
     log_idq[k,0] = i_d
     log_idq[k,1] = i_q
     log_duties[k] = duties
+    log_iq_ref[k] = iq_ref
 
 plt.figure(figsize=(cm_to_inches(25),cm_to_inches(20)))
 

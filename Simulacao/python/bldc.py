@@ -50,8 +50,8 @@ class BLDC():
         self.Vdc = Vdc
 
         self.PHI_A = 0
-        self.PHI_B = 2 * pi / 3
-        self.PHI_C = -2 * pi / 3
+        self.PHI_B = -2 * pi / 3
+        self.PHI_C = 2 * pi / 3
 
         self.ia = 0.0
         self.ib = 0.0
@@ -68,13 +68,13 @@ class BLDC():
         theta_e = np.mod(theta_e, 2 * np.pi)
 
         if back_emf_trapezoidal_flag:
-            fa = self.back_emf_trapezoidal(theta_e + self.PHI_A)
-            fb = self.back_emf_trapezoidal(theta_e + self.PHI_B)
-            fc = self.back_emf_trapezoidal(theta_e + self.PHI_C)
+            fa = -self.back_emf_trapezoidal(theta_e + self.PHI_A)
+            fb = -self.back_emf_trapezoidal(theta_e + self.PHI_B)
+            fc = -self.back_emf_trapezoidal(theta_e + self.PHI_C)
         else:
-            fa = np.sin(theta_e + self.PHI_A)
-            fb = np.sin(theta_e + self.PHI_B)
-            fc = np.sin(theta_e + self.PHI_C)
+            fa = -np.sin(theta_e + self.PHI_A)
+            fb = -np.sin(theta_e + self.PHI_B)
+            fc = -np.sin(theta_e + self.PHI_C)
 
         omega_e = self.P * self.omega_r
 
