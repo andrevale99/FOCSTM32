@@ -48,14 +48,14 @@ Rs = 0.6 #Ohm
 L = 5e-4 #H
 
 # Constantes eletricas e mecanicas
-Ke = 0.0676
+Ke = 0.0176
 Kt = Ke
 
 # Torque da carga
 Tl = 0.1
 
 # Coeficiente de amortecimento
-B = 1.312e-7
+B = 1.312e-4
 
 # Momento de inercia
 J = 4.6e-6
@@ -71,8 +71,8 @@ PARES_DE_POLOS = POLOS / 2
 VDC_MAX = Vdc
 VDC_MIN = -Vdc
 
-PI_IQ_MAX = 10
-PI_IQ_MIN = -10
+PI_IQ_MAX = 5
+PI_IQ_MIN = -5
 
 # ========================================= 
 #   PARAMETROS SIMULACAO
@@ -100,7 +100,7 @@ inverter = Inverter(Vdc=Vdc)
 
 pi_omega = PIController(Kp=1,Ki=0.1,Ts=dt, 
                         output_min=PI_IQ_MIN, output_max=PI_IQ_MAX)
-pi_d = PIController(Kp=5,Ki=1.8,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
+pi_d = PIController(Kp=5,Ki=2,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
 pi_q = PIController(Kp=5,Ki=2,Ts=dt, output_min=VDC_MIN, output_max=VDC_MAX)
 
 # ========================================= 
@@ -112,7 +112,7 @@ motor.set_initial_conditions()
 # iq_ref = 0
 id_ref = 0     # Em motores de ímãs permanentes, d-axis ref é geralmente 0
 
-rpm_ref = 180  # Exemplo: 100 RPM
+rpm_ref = 200  # Exemplo: 100 RPM
 omega_ref = rpm_to_rads(rpm_ref)
 print(omega_ref)
 
