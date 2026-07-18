@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # Parâmetros
 # ============================================================
 
-arquivo = "closedloop_simulation.csv"
+arquivo = "c/closedloop_simulation.csv"
 
 # Referência de velocidade utilizada na simulação (rpm).
 # Ajuste aqui caso a referência utilizada em main_closedloop.c seja outra.

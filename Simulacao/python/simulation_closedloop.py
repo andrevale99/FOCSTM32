@@ -1,240 +1,344 @@
-from matplotlib.animation import FuncAnimation
-import matplotlib.pyplot as plt
-from numpy import pi
+import csv
 import numpy as np
-import os
 
 from PIcontroller import PIController
 from Inverter import Inverter
 from bldc import BLDC, rpm_to_rads
 from SVPWM import SVPWM
 
-PATH = os.getcwd()
-print(f'PATH = {PATH + "/"}')
-# print(os.listdir(PATH))
 
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "serif",
-    "mathtext.fontset": "cm",
-    "font.serif": ["cmr10", "DejaVu Serif", "serif"],
-    "axes.formatter.use_mathtext": True,
-    "font.size": 12
-})
-
-def cm_to_inches(cm):
-    return cm/2.54
-
-# ========================================= 
+# =========================================
 #   PARAMETROS REDE
 # =========================================
 
 # Amplitude da rede
-Vdc = 12 #V
+Vdc = np.float32(12.0)  # V
 
-# Defasagens das fases
-# PHI_A = 0
-# PHI_B = -2*pi/3
-# PHI_C = 2*pi/3
 
-# ========================================= 
+# =========================================
 #   PARAMETROS MOTOR
 # =========================================
 
 # Resistencia de armadura
-Rs = 1.5 #Ohm
+Rs = np.float32(1.5)  # Ohm
 
 # Indutancia de magnetizacao
-L = 50e-3 #H
+L = np.float32(50e-3)  # H
 
 # Constantes eletricas e mecanicas
-Ke = 0.850
-Kt = Ke
+Ke = np.float32(0.850)
+Kt = np.float32(Ke)
 
 # Torque da carga
-Tl = 0.0
+Tl = np.float32(0.0)
 
 # Coeficiente de amortecimento
-B = 1e-3
+B = np.float32(1e-3)
 
 # Momento de inercia
-J = 0.0036013854
+J = np.float32(0.0036013854)
 
-# Quantidade de Polos no motor
-POLOS = 8
-PARES_DE_POLOS = POLOS / 2
+# Quantidade de polos no motor
+POLOS = np.int32(8)
 
-# ========================================= 
+# Quantidade de pares de polos
+PARES_DE_POLOS = np.float32(POLOS // 2)
+
+
+# =========================================
 #   PARAMETROS DOS CONTROLADORES
 # =========================================
 
-VDC_MAX = Vdc
-VDC_MIN = -Vdc
+VDC_MAX = np.float32(Vdc)
+VDC_MIN = np.float32(-Vdc)
 
-PI_IQ_MAX = 5
-PI_IQ_MIN = -PI_IQ_MAX
+PI_IQ_MAX = np.float32(5.0)
+PI_IQ_MIN = np.float32(-PI_IQ_MAX)
 
-# ========================================= 
+
+# =========================================
 #   PARAMETROS SIMULACAO
 # =========================================
 
-ti = 0.0 #s
-tf = 1 #s
-dt = 1e-5 #s
+ti = np.float32(0.0)  # s
+tf = np.float32(1.0)  # s
+dt = np.float32(1e-5)  # s
 
-time = np.arange(
-    ti,
-    tf,
-    dt
-)
-
+time = np.arange(ti, tf, dt, dtype=np.float32)
 N = len(time)
 
-# ========================================= 
+
+# =========================================
 #   OBJETOS
 # =========================================
 
-motor = BLDC(Rs,L,B,J,Ke,Kt,PARES_DE_POLOS,Vdc)
-pwm = SVPWM(Hz=10000, Vdc=Vdc)
-inverter = Inverter(Vdc=Vdc)
+motor = BLDC(
+    Rs,
+    L,
+    B,
+    J,
+    Ke,
+    Kt,
+    PARES_DE_POLOS,
+    Vdc
+)
 
-# ========================================= 
+pwm = SVPWM(
+    Hz=np.float32(10000.0),
+    Vdc=Vdc
+)
+
+inverter = Inverter(
+    Vdc=Vdc
+)
+
+
+# =========================================
 #   CONTROLADORES
 # =========================================
 
-dtOmega = 5e-4  #s
-kpOmega = 2
-kiOmega = 0.5
+dtOmega = np.float32(5e-4)  # s
+kpOmega = np.float32(2.0)
+kiOmega = np.float32(0.5)
 
-dtId = 5e-4     #s
-kpId = 10
-kiId = 5
+dtId = np.float32(5e-4)  # s
+kpId = np.float32(10.0)
+kiId = np.float32(5.0)
 
-dtIq = 5e-4 #s
-kpIq = 10
-kiIq = 5
+dtIq = np.float32(5e-4)  # s
+kpIq = np.float32(10.0)
+kiIq = np.float32(5.0)
 
-pi_omega = PIController(Kp=kpOmega,Ki=kiOmega,Ts=dtOmega, 
-                        output_min=PI_IQ_MIN, output_max=PI_IQ_MAX)
 
-pi_d = PIController(Kp=kpId,Ki=kiId,Ts=dtId, 
-                    output_min=VDC_MIN, output_max=VDC_MAX)
+pi_omega = PIController(
+    Kp=kpOmega,
+    Ki=kiOmega,
+    Ts=dtOmega,
+    output_min=PI_IQ_MIN,
+    output_max=PI_IQ_MAX
+)
 
-pi_q = PIController(Kp=kpIq,Ki=kiIq,Ts=dtIq, 
-                    output_min=VDC_MIN, output_max=VDC_MAX)
+pi_d = PIController(
+    Kp=kpId,
+    Ki=kiId,
+    Ts=dtId,
+    output_min=VDC_MIN,
+    output_max=VDC_MAX
+)
 
-# ========================================= 
+pi_q = PIController(
+    Kp=kpIq,
+    Ki=kiIq,
+    Ts=dtIq,
+    output_min=VDC_MIN,
+    output_max=VDC_MAX
+)
+
+
+# =========================================
 #   SIMULACAO
 # =========================================
 
 motor.set_initial_conditions()
 
-# iq_ref = 0
-id_ref = 0     # Em motores de ímãs permanentes, d-axis ref é geralmente 0
+id_ref = np.float32(0.0)
 
-rpm_ref = 20
-omega_ref = rpm_to_rads(rpm_ref)
+rpm_ref = np.float32(20.0)
+omega_ref = np.float32(rpm_to_rads(rpm_ref))
+
 print(omega_ref)
 
-log_omega = np.zeros(N)
-log_Vabc = np.zeros((N,3))
-log_iabc = np.zeros((N,3))
-log_idq = np.zeros((N,2))
-log_Te = np.zeros(N)
-log_theta = np.zeros(N)
-log_iq_ref = np.zeros(N)
-log_duties = np.zeros((N,3))
 
-for k in range(N):
-    # A. Medição (feedback do modelo)
-    # Suponha que 'motor' já foi instanciado e 'theta_r' existe no estado
-    theta_e = motor.theta_r * motor.P 
-    omega_e = motor.omega_r * motor.P # Velocidade elétrica
+# =========================================
+#   ARQUIVO DE LOG (CSV)
+# =========================================
 
-    iq_ref = pi_omega.update(omega_ref, motor.omega_r)
+arquivo_csv = "closedloop_simulation.csv"
 
-    
-    # B. Transformada de Clarke e Park
-    i_alpha, i_beta = motor.Clarke([motor.ia, motor.ib, motor.ic])
 
-    # C. Calcular o vetor fluxo
-    # lambda_alpha += (r*i_alpha + v_alpha)*dt
-    # lambda_beta += (r*i_beta + v_beta)*dt
+with open(arquivo_csv, mode="w", newline="") as f:
 
-    i_d, i_q = motor.Park(np.array([i_alpha, i_beta]), theta_e)
+    writer = csv.writer(f, delimiter=";")
 
-    # Termos de feedforward
-    # Vd_ff = -omega_e * motor.L * i_q
-    # Vq_ff = (omega_e * motor.L * i_d) + (omega_e * motor.Ke)
-    
-    # D. Controle PI (Loop de Corrente)
-    vd_ref = pi_d.update(id_ref, i_d)
-    vq_ref = pi_q.update(iq_ref, i_q)
+    writer.writerow([
+        "time",
+        "Va", "Vb", "Vc",
+        "ia", "ib", "ic",
+        "id", "iq",
+        "Te",
+        "theta_r",
+        "omega_r",
+        "iq_ref",
+        "duty_a", "duty_b", "duty_c"
+    ])
 
-    # E. Transformada Inversa de Park
-    v_alpha, v_beta = motor.ParkInverse(np.array([vd_ref, vq_ref]), theta_e)
+    for k in range(N):
 
-    # F.Dutys Cycles dos pwm's
-    duties = pwm.modulate(v_alpha, v_beta)
+        # =========================================
+        # A. MEDICAO
+        # =========================================
 
-    # G. Inversor
-    v_abc = inverter.output_voltage(duties[0], duties[1], duties[2])
+        theta_e = np.float32(
+            motor.theta_r * motor.P
+        )
 
-    # H. Atualização da Planta (Motor)
-    estados = motor.step(v_abc[0], v_abc[1], v_abc[2], Tl=Tl, dt=dt, 
-                         back_emf_trapezoidal_flag=False)
+        omega_e = np.float32(
+            motor.omega_r * motor.P
+        )
 
-    log_omega[k] = estados['omega_r']
-    log_theta[k] = estados['theta_r']
-    log_iabc[k,0] = estados["ia"]
-    log_iabc[k,1] = estados["ib"]
-    log_iabc[k,2] = estados["ic"]
-    log_Te[k] = estados["Te"]
-    log_Vabc[k] = v_abc
-    log_idq[k,0] = i_d
-    log_idq[k,1] = i_q
-    log_duties[k] = duties
-    log_iq_ref[k] = iq_ref
+        iq_ref = np.float32(
+            pi_omega.update(
+                omega_ref,
+                motor.omega_r
+            )
+        )
 
-plt.figure(figsize=(cm_to_inches(25),cm_to_inches(20)))
 
-plt.subplot(511)
-plt.title(r"$V_{abc}$")
-plt.plot(time, log_Vabc, label=[r"$V_a$", r"$V_b$", r"$V_c$"])
-plt.legend()
-plt.grid()
-plt.ylabel(r"$V$")
+        # =========================================
+        # B. TRANSFORMADA DE CLARKE E PARK
+        # =========================================
 
-plt.subplot(512)
-plt.title(r"$i_{abc}$")
-plt.plot(time, log_iabc, label=[r"$i_a$", r"$i_b$", r"$i_c$"])
-plt.legend()
-plt.grid()
-plt.ylabel(r"$A$")
+        i_alpha, i_beta = motor.Clarke(
+            np.array(
+                [
+                    motor.ia,
+                    motor.ib,
+                    motor.ic
+                ],
+                dtype=np.float32
+            )
+        )
 
-plt.subplot(513)
-plt.title(r"$i_{dq}$")
-plt.plot(time, log_idq, label=[r"$i_d$", r"$i_q$"])
-plt.legend()
-plt.grid()
-plt.ylabel(r"$A$")
+        i_alpha = np.float32(i_alpha)
+        i_beta = np.float32(i_beta)
 
-plt.subplot(514)
-plt.title(r"$\omega_r$")
-plt.plot(time, log_omega, label=r'$\omega_r$')
-plt.legend()
-plt.grid()
-plt.ylabel(r"$\omega_r$")
+        i_d, i_q = motor.Park(
+            np.array(
+                [
+                    i_alpha,
+                    i_beta
+                ],
+                dtype=np.float32
+            ),
+            theta_e
+        )
 
-plt.subplot(515)
-plt.title(r"$T_e$")
-plt.plot(time, log_Te, label=r'$T_e$')
-plt.legend()
-plt.grid()
-plt.ylabel(r"$N \cdot m$")
+        i_d = np.float32(i_d)
+        i_q = np.float32(i_q)
 
-plt.xlabel(r'$s$')
 
-plt.tight_layout()
+        # =========================================
+        # C. CONTROLE PI - LOOP DE CORRENTE
+        # =========================================
 
-plt.show()
+        vd_ref = np.float32(
+            pi_d.update(
+                id_ref,
+                i_d
+            )
+        )
+
+        vq_ref = np.float32(
+            pi_q.update(
+                iq_ref,
+                i_q
+            )
+        )
+
+
+        # =========================================
+        # D. TRANSFORMADA INVERSA DE PARK
+        # =========================================
+
+        v_alpha, v_beta = motor.ParkInverse(
+            np.array(
+                [
+                    vd_ref,
+                    vq_ref
+                ],
+                dtype=np.float32
+            ),
+            theta_e
+        )
+
+        v_alpha = np.float32(v_alpha)
+        v_beta = np.float32(v_beta)
+
+
+        # =========================================
+        # E. DUTY CYCLES DO PWM
+        # =========================================
+
+        duty_a, duty_b, duty_c = pwm.modulate(
+            v_alpha,
+            v_beta
+        )
+
+        duty_a = np.float32(duty_a)
+        duty_b = np.float32(duty_b)
+        duty_c = np.float32(duty_c)
+
+
+        # =========================================
+        # F. INVERSOR
+        # =========================================
+
+        va, vb, vc = inverter.output_voltage(
+            duty_a,
+            duty_b,
+            duty_c
+        )
+
+        va = np.float32(va)
+        vb = np.float32(vb)
+        vc = np.float32(vc)
+
+
+        # =========================================
+        # G. ATUALIZACAO DA PLANTA
+        # =========================================
+
+        estados = motor.step(
+            va,
+            vb,
+            vc,
+            Tl=np.float32(Tl),
+            dt=np.float32(dt),
+            back_emf_trapezoidal_flag=False
+        )
+
+
+        # =========================================
+        # H. LOG
+        # =========================================
+
+        writer.writerow([
+            np.float32(time[k]),
+
+            np.float32(va),
+            np.float32(vb),
+            np.float32(vc),
+
+            np.float32(estados["ia"]),
+            np.float32(estados["ib"]),
+            np.float32(estados["ic"]),
+
+            np.float32(i_d),
+            np.float32(i_q),
+
+            np.float32(estados["Te"]),
+
+            np.float32(estados["theta_r"]),
+            np.float32(estados["omega_r"]),
+
+            np.float32(iq_ref),
+
+            np.float32(duty_a),
+            np.float32(duty_b),
+            np.float32(duty_c)
+        ])
+
+
+print(
+    f'Simulacao concluida. Resultados em "{arquivo_csv}".'
+)
