@@ -7,4 +7,6 @@ B=0.0012
 Tl=0.0
 P=8
 Kt=0.2
+Fsw=10000.0
+PwmSamples=30
 file=saida_config.csv

@@ -33,8 +33,10 @@
 #include <getopt.h>
 
 #include "PIcontroller.h"
-#include "SVPWM.h"
-#include "inverter.h"
+#include "_SVPWM.h"
+// #include "SVPWM.h"
+// #include "inverter.h"
+#include "_inverter.h"
 #include "transforms.h"
 #include "bldc.h"
 
@@ -60,12 +62,6 @@
 #define DEFAULT_OUTPUT_FILE "closedloop_simulation.csv"
 
 /* ========================================================================
- *   PARAMETROS DO SVPWM (CHAVEAMENTO REAL)
- * ==================================================================== */
-#define DEFAULT_SVPWM_HZ    10000.0  /* Hz - frequencia de chaveamento     */
-#define DEFAULT_PWM_SAMPLES 20       /* passos finos de simulacao por Ts   */
-
-/* ========================================================================
  *   LIMITES DOS CONTROLADORES
  * ==================================================================== */
 #define VDC_MAX  (VDC)
@@ -79,9 +75,7 @@
  * ==================================================================== */
 #define SIM_TI 0.0f     /* s */
 #define SIM_TF 1.0f     /* s */
-/* SIM_DT nao e mais fixo: o passo de integracao agora e derivado da
- * frequencia de chaveamento do SVPWM (Ts / PwmSamples), para que o
- * chaveamento real do inversor seja resolvido no tempo. Veja main(). */
+#define SIM_DT 1e-5f    /* s */
 
 /* ========================================================================
  *   ARGUMENTOS DE LINHA DE COMANDO
@@ -98,8 +92,6 @@ typedef struct
     double Tl;
     int    P;
     double Kt;
-    double Fsw;         /* frequencia de chaveamento do SVPWM [Hz]           */
-    int    PwmSamples;  /* passos finos de simulacao por periodo Ts do PWM  */
 } sim_args_t;
 
 static void usage(const char *prog)
@@ -120,8 +112,6 @@ static void usage(const char *prog)
         "  Tl=0.0\n"
         "  P=4\n"
         "  Kt=0.85\n"
-        "  Fsw=10000\n"
-        "  PwmSamples=20\n"
         "  file=saida.csv\n"
         "(linhas em branco ou iniciadas com '#' sao ignoradas)\n\n"
         "Opcoes:\n"
@@ -136,16 +126,7 @@ static void usage(const char *prog)
         "  -T, --Tl <valor>    Torque de carga [N.m]              (default: %.6f)\n"
         "  -P, --P <valor>     Numero de pares de polos           (default: %d)\n"
         "  -t, --Kt <valor>    Constante de torque [N.m/A]        (default: %.6f)\n"
-        "  -s, --fsw <valor>   Frequencia de chaveamento do SVPWM [Hz] (default: %.1f)\n"
-        "  -n, --pwm-samples <n> Passos finos de simulacao por periodo Ts do PWM\n"
-        "                       (default: %d; maior = mais fiel, porem mais lento)\n"
-        "  -h, --help          Mostra esta mensagem de ajuda\n\n"
-        "Observacao: a simulacao reproduz o chaveamento REAL do inversor\n"
-        "(comparacao do duty cycle com uma portadora triangular), nao um\n"
-        "modelo de valor medio. Por isso o passo de integracao (dt) e\n"
-        "derivado automaticamente de Fsw e PwmSamples (dt = 1/Fsw / PwmSamples),\n"
-        "e mudar -s/--fsw agora tem efeito real no resultado (ripple de\n"
-        "corrente, de torque, etc).\n",
+        "  -h, --help          Mostra esta mensagem de ajuda\n",
         prog,
         DEFAULT_OUTPUT_FILE,
         (double)DEFAULT_MOTOR_RS,
@@ -156,9 +137,7 @@ static void usage(const char *prog)
         (double)DEFAULT_MOTOR_B,
         (double)DEFAULT_TL,
         DEFAULT_MOTOR_PARES_DE_POLOS,
-        (double)DEFAULT_MOTOR_KT,
-        (double)DEFAULT_SVPWM_HZ,
-        DEFAULT_PWM_SAMPLES);
+        (double)DEFAULT_MOTOR_KT);
 }
 
 /* --------------------------------------------------------------------
@@ -237,10 +216,6 @@ static int parse_config_file(const char *path, sim_args_t *args)
             args->P = atoi(v);
         else if (strcasecmp(key, "Kt") == 0)
             args->Kt = atof(v);
-        else if (strcasecmp(key, "Fsw") == 0)
-            args->Fsw = atof(v);
-        else if (strcasecmp(key, "PwmSamples") == 0)
-            args->PwmSamples = atoi(v);
         else if (strcasecmp(key, "file") == 0 || strcasecmp(key, "filename") == 0)
         {
             strncpy(args->filename, v, sizeof(args->filename) - 1);
@@ -272,8 +247,6 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
     args->Tl = (double)DEFAULT_TL;
     args->P  = DEFAULT_MOTOR_PARES_DE_POLOS;
     args->Kt = (double)DEFAULT_MOTOR_KT;
-    args->Fsw        = DEFAULT_SVPWM_HZ;
-    args->PwmSamples = DEFAULT_PWM_SAMPLES;
 
     static struct option long_options[] =
     {
@@ -288,12 +261,10 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
         {"Tl",     required_argument, 0, 'T'},
         {"P",      required_argument, 0, 'P'},
         {"Kt",     required_argument, 0, 't'},
-        {"fsw",         required_argument, 0, 's'},
-        {"pwm-samples", required_argument, 0, 'n'},
         {"help",   no_argument,       0, 'h'},
         {0, 0, 0, 0}
     };
-    const char *optstring = "c:f:R:L:M:K:J:B:T:P:t:s:n:h";
+    const char *optstring = "c:f:R:L:M:K:J:B:T:P:t:h";
 
     int opt;
     int option_index;
@@ -358,8 +329,6 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
             case 'T': args->Tl = atof(optarg); break;
             case 'P': args->P  = atoi(optarg); break;
             case 't': args->Kt = atof(optarg); break;
-            case 's': args->Fsw        = atof(optarg); break;
-            case 'n': args->PwmSamples = atoi(optarg); break;
             case 'h':
                 usage(argv[0]);
                 exit(EXIT_SUCCESS);
@@ -385,21 +354,7 @@ int main(int argc, char **argv)
     printf("  B  = %.6f\n", args.B);
     printf("  Tl = %.6f N.m\n", args.Tl);
     printf("  P  = %d\n", args.P);
-    printf("  Kt = %.6f N.m/A\n", args.Kt);
-    printf("  Fsw = %.1f Hz (chaveamento SVPWM real)\n", args.Fsw);
-    printf("  PwmSamples = %d passos finos por periodo Ts\n\n", args.PwmSamples);
-
-    if (args.Fsw <= 0.0)
-    {
-        fprintf(stderr, "Erro: Fsw deve ser > 0.\n");
-        return EXIT_FAILURE;
-    }
-
-    if (args.PwmSamples < 2)
-    {
-        fprintf(stderr, "Erro: PwmSamples deve ser >= 2.\n");
-        return EXIT_FAILURE;
-    }
+    printf("  Kt = %.6f N.m/A\n\n", args.Kt);
 
     /* --------------------------------------------------------------
      *   OBJETOS DA PLANTA
@@ -429,41 +384,15 @@ int main(int argc, char **argv)
         .log = NULL
     };
 
-    svpwm_t pwm;
-    if (!svpwm_init(&pwm, (float)args.Fsw, 0.0f, VDC))
-    {
-        fprintf(stderr, "Erro: falha ao inicializar o SVPWM (verifique Fsw e VDC).\n");
-        return EXIT_FAILURE;
-    }
-
-    /* O passo de integracao (dt) e derivado do periodo de chaveamento
-     * (Ts = 1/Fsw), para que a comparacao com a portadora triangular
-     * -- e portanto o chaveamento real do inversor -- seja resolvida
-     * no tempo. Isso faz com que mudar Fsw realmente altere o
-     * resultado da simulacao (ripple de corrente, torque, etc). */
-    float dt = pwm.Ts / (float)args.PwmSamples;
-
     time_simulation_t time_sim =
     {
         .t0 = SIM_TI,
         .tf = SIM_TF,
-        .dt = dt
+        .dt = SIM_DT
     };
 
-    long total_steps =
-        (long)((double)(time_sim.tf - time_sim.t0) / (double)dt + 0.5) + 1;
-
-    printf("Periodo de chaveamento (Ts) = %.9e s\n", (double)pwm.Ts);
-    printf("Passo de integracao (dt)    = %.9e s\n", (double)dt);
-    printf("Total de passos da simulacao ~ %ld\n\n", total_steps);
-
-    if (total_steps > 5000000L)
-    {
-        fprintf(stderr,
-                "Aviso: %ld passos -- a simulacao pode demorar bastante. "
-                "Reduza --pwm-samples ou aumente --fsw se necessario.\n\n",
-                total_steps);
-    }
+    svpwm_t pwm;
+    svpwm_init(&pwm, 1000.0f, 0.0f, VDC); /* Hz = 10 kHz, Ts calculado internamente */
 
     inverter_t inverter = { .Vdc = VDC };
 
@@ -507,20 +436,13 @@ int main(int argc, char **argv)
     }
 
     fprintf(log_file,
-            "time;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;omega_r;iq_ref;"
-            "duty_a;duty_b;duty_c;carrier;gate_a;gate_b;gate_c\n");
+            "time;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;omega_r;iq_ref;duty_a;duty_b;duty_c\n");
 
     /* --------------------------------------------------------------
      *   LACO DE SIMULACAO
      * -------------------------------------------------------------- */
-    for (long k = 0; k < total_steps; k++)
+    for (float t = time_sim.t0; t <= time_sim.tf; t += time_sim.dt)
     {
-        float t = time_sim.t0 + (float)((double)k * (double)dt);
-        if (t > time_sim.tf)
-        {
-            break;
-        }
-
         /* A. Medicao (feedback do modelo) */
         float theta_e = motor.theta_r * (float)motor.P;
 
@@ -545,32 +467,20 @@ int main(int argc, char **argv)
         park_inverse_transform((float)vd_ref, (float)vq_ref, theta_e,
                                 &v_alpha, &v_beta);
 
-        /* F. SVPWM: duty cycles de referencia (sinal modulante) */
+        /* F. SVPWM: duty cycles das 3 fases */
         float duty_a, duty_b, duty_c;
         svpwm_modulate(&pwm, v_alpha, v_beta, &duty_a, &duty_b, &duty_c);
 
-        /* G. Chaveamento real: compara o duty de referencia com a
-         *    portadora triangular instantanea -> estado 0/1 de cada
-         *    braco do inversor (chave superior ligada/desligada) */
-        float carrier = svpwm_carrier(&pwm, t);
-        int gate_a = svpwm_gate_state(duty_a, carrier);
-        int gate_b = svpwm_gate_state(duty_b, carrier);
-        int gate_c = svpwm_gate_state(duty_c, carrier);
-
-        /* H. Inversor: tensoes de fase aplicadas ao motor, calculadas
-         *    a partir do estado REAL de chaveamento (0 ou Vdc por
-         *    braco), nao mais do valor medio continuo */
+        /* G. Inversor: tensoes de fase aplicadas ao motor */
         float Vabc[3];
-        inverter_output_voltage(&inverter, (float)gate_a, (float)gate_b,
-                                 (float)gate_c, Vabc);
+        inverter_output_voltage(&inverter, duty_a, duty_b, duty_c, Vabc);
 
-        /* I. Atualizacao da planta (motor BLDC) */
+        /* H. Atualizacao da planta (motor BLDC) */
         bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
 
-        /* J. Log dos dados */
+        /* I. Log dos dados */
         fprintf(log_file,
-                "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
-                "%.6f;%.6f;%.6f;%.6f;%d;%d;%d\n",
+                "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f\n",
                 t,
                 Vabc[0], Vabc[1], Vabc[2],
                 motor.iabc[0], motor.iabc[1], motor.iabc[2],
@@ -578,9 +488,7 @@ int main(int argc, char **argv)
                 motor.Te,
                 motor.theta_r, motor.omega_r,
                 iq_ref,
-                duty_a, duty_b, duty_c,
-                carrier,
-                gate_a, gate_b, gate_c);
+                duty_a, duty_b, duty_c);
     }
 
     fclose(log_file);
