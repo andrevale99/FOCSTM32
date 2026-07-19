@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 # Parâmetros
 # ============================================================
 
-arquivo = "c/closedloop_simulation.csv"
+arquivo = "closedloop_simulation.csv"
 
 # Referência de velocidade utilizada na simulação (rpm).
 # Ajuste aqui caso a referência utilizada em main_closedloop.c seja outra.
-OMEGA_REF_RPM = 20.0
+OMEGA_REF_RPM = 25.0
 
 
 # ============================================================
