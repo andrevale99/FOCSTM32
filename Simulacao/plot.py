@@ -37,7 +37,7 @@ pasta_saida = sys.argv[2] if len(sys.argv) > 2 else "graficos"
 
 # Referencia de velocidade utilizada na simulacao (rpm).
 # Ajuste aqui caso a referencia utilizada em main.c seja outra.
-OMEGA_REF_RPM = 25.0
+# OMEGA_REF_RPM = 100.0
 
 
 # ============================================================
@@ -170,7 +170,7 @@ plotar_grupo(
     "Velocidade mecânica do rotor",
     "Velocidade (rpm)",
     [("omega_r_rpm", "ωr", "-")],
-    linhas_ref=[(OMEGA_REF_RPM, "ωr_ref")],
+    # linhas_ref=[(OMEGA_REF_RPM, "ωr_ref")],
 )
 
 

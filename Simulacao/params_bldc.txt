@@ -8,31 +8,31 @@
 # ==========================================================
 
 # --- Parametros do motor ---
-R  = 1.5             # Ohm  - resistencia de armadura
-L  = 0.05             # H    - indutancia de magnetizacao
-M  = 0.0             # H    - indutancia mutua
-Ke = 0.15             # V/(rad/s) - constante eletrica
-J  = 0.0036013854     # kg.m^2 - momento de inercia
-B  = 0.001             # coeficiente de amortecimento
-Tl = 0.0             # N.m  - torque de carga
-P  = 4                 # numero de pares de polos
-Kt = 0.15             # N.m/A - constante de torque
+R  = 36e-3      # Ohm  - resistencia de armadura
+L  = 0.6e-3   # H    - indutancia de magnetizacao
+M  = 0.1        # H    - indutancia mutua
+Ke = 0.1      # V/(rad/s) - constante eletrica
+J  = 4.6e-6       # kg.m^2 - momento de inercia
+B  = 0.001      # coeficiente de amortecimento
+Tl = 0.036         # N.m  - torque de carga
+P  = 8          # numero de pares de polos
+Kt = 0.1       # N.m/A - constante de torque
 
 # --- Parametros do SVPWM (chaveamento real do inversor) ---
 Fsw        = 10000     # Hz - frequencia de chaveamento
-PwmSamples = 20         # passos finos de simulacao por periodo Ts
+PwmSamples = 100         # passos finos de simulacao por periodo Ts
                          # (maior = mais fiel ao chaveamento real, porem mais lento)
 
 # --- Parametros de tempo da simulacao ---
 Ti = 0.0                 # s - tempo inicial
-Tf = 0.2                 # s - tempo final
-Dt = 0.0                 # s - passo de integracao explicito
+Tf = 0.12                 # s - tempo final
+Dt = 1e-6                 # s - passo de integracao explicito
                          # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
                          #  informe um valor > 0 para sobrescrever o
                          #  calculo automatico)
 
 # --- Barramento CC ---
-Vdc = 112.0               # V - tensao do barramento CC
+Vdc = 24.0               # V - tensao do barramento CC
 
 # --- Controladores PI ---
 KpOmega = 2.0             # ganho proporcional - malha de velocidade
@@ -41,6 +41,9 @@ KpId    = 6.0             # ganho proporcional - malha de corrente id
 KiId    = 2.0             # ganho integral - malha de corrente id
 KpIq    = 6.0             # ganho proporcional - malha de corrente iq
 KiIq    = 2.0             # ganho integral - malha de corrente iq
+
+# --- Referencia de velocidade ---
+rpm=50
 
 # --- Saida ---
 file = closedloop_simulation.csv
