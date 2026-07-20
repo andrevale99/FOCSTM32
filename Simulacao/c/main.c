@@ -41,7 +41,7 @@
 /* ========================================================================
  *   PARAMETROS DA REDE / BARRAMENTO CC
  * ==================================================================== */
-#define VDC   120.0f   /* V */
+#define DEFAULT_VDC   120.0f   /* V */
 
 /* ========================================================================
  *   PARAMETROS DO MOTOR
@@ -68,20 +68,33 @@
 /* ========================================================================
  *   LIMITES DOS CONTROLADORES
  * ==================================================================== */
-#define VDC_MAX  (VDC)
-#define VDC_MIN  (-VDC)
+/* Os limites de saturacao das malhas de corrente (vd/vq) sao +-Vdc,
+ * calculados em tempo de execucao em main() a partir de args.Vdc,
+ * ja que Vdc agora e configuravel via CLI/arquivo de config. */
 
 #define PI_IQ_MAX 50.0
 #define PI_IQ_MIN (-PI_IQ_MAX)
 
 /* ========================================================================
+ *   GANHOS PADRAO DOS CONTROLADORES PI
+ * ==================================================================== */
+#define DEFAULT_KP_OMEGA 2.0
+#define DEFAULT_KI_OMEGA 1.5
+#define DEFAULT_KP_ID    6.0
+#define DEFAULT_KI_ID    2.0
+#define DEFAULT_KP_IQ    6.0
+#define DEFAULT_KI_IQ    2.0
+
+/* ========================================================================
  *   PARAMETROS DA SIMULACAO
  * ==================================================================== */
-#define SIM_TI 0.0f     /* s */
-#define SIM_TF 1.0f     /* s */
-/* SIM_DT nao e mais fixo: o passo de integracao agora e derivado da
- * frequencia de chaveamento do SVPWM (Ts / PwmSamples), para que o
- * chaveamento real do inversor seja resolvido no tempo. Veja main(). */
+#define DEFAULT_SIM_TI 0.0f     /* s */
+#define DEFAULT_SIM_TF 1.0f     /* s */
+/* DEFAULT_SIM_DT = 0.0 significa "automatico": o passo de integracao e
+ * derivado da frequencia de chaveamento do SVPWM (Ts / PwmSamples). Se
+ * o usuario informar um Dt explicito (> 0), esse valor e usado
+ * diretamente, sobrescrevendo o calculo automatico. Veja main(). */
+#define DEFAULT_SIM_DT 0.0f
 
 /* ========================================================================
  *   ARGUMENTOS DE LINHA DE COMANDO
@@ -100,7 +113,31 @@ typedef struct
     double Kt;
     double Fsw;         /* frequencia de chaveamento do SVPWM [Hz]           */
     int    PwmSamples;  /* passos finos de simulacao por periodo Ts do PWM  */
+    double Ti;          /* tempo inicial da simulacao [s]                   */
+    double Tf;          /* tempo final da simulacao [s]                     */
+    double Dt;           /* passo de integracao explicito [s] (0 = automatico) */
+    double Vdc;          /* tensao do barramento CC [V]                       */
+    double KpOmega;       /* ganho proporcional - malha de velocidade          */
+    double KiOmega;       /* ganho integral - malha de velocidade              */
+    double KpId;           /* ganho proporcional - malha de corrente id         */
+    double KiId;           /* ganho integral - malha de corrente id             */
+    double KpIq;           /* ganho proporcional - malha de corrente iq         */
+    double KiIq;           /* ganho integral - malha de corrente iq             */
 } sim_args_t;
+
+/* Identificadores para opcoes de linha de comando que so existem na
+ * forma longa (--vdc, --kp-omega, etc.), sem letra curta associada.
+ * getopt_long aceita qualquer inteiro > 255 como "val" para essas. */
+enum
+{
+    OPT_VDC = 1000,
+    OPT_KP_OMEGA,
+    OPT_KI_OMEGA,
+    OPT_KP_ID,
+    OPT_KI_ID,
+    OPT_KP_IQ,
+    OPT_KI_IQ
+};
 
 static void usage(const char *prog)
 {
@@ -122,6 +159,16 @@ static void usage(const char *prog)
         "  Kt=0.85\n"
         "  Fsw=10000\n"
         "  PwmSamples=20\n"
+        "  Ti=0.0\n"
+        "  Tf=1.0\n"
+        "  Dt=0.0\n"
+        "  Vdc=120.0\n"
+        "  KpOmega=2.0\n"
+        "  KiOmega=1.5\n"
+        "  KpId=6.0\n"
+        "  KiId=2.0\n"
+        "  KpIq=6.0\n"
+        "  KiIq=2.0\n"
         "  file=saida.csv\n"
         "(linhas em branco ou iniciadas com '#' sao ignoradas)\n\n"
         "Opcoes:\n"
@@ -139,13 +186,27 @@ static void usage(const char *prog)
         "  -s, --fsw <valor>   Frequencia de chaveamento do SVPWM [Hz] (default: %.1f)\n"
         "  -n, --pwm-samples <n> Passos finos de simulacao por periodo Ts do PWM\n"
         "                       (default: %d; maior = mais fiel, porem mais lento)\n"
+        "  -i, --ti <valor>    Tempo inicial da simulacao [s]     (default: %.6f)\n"
+        "  -e, --tf <valor>    Tempo final da simulacao [s]       (default: %.6f)\n"
+        "  -d, --dt <valor>    Passo de integracao explicito [s]  (default: automatico,\n"
+        "                       dt = 1/Fsw / PwmSamples; informe > 0 para sobrescrever)\n"
+        "      --vdc <valor>   Tensao do barramento CC [V]        (default: %.6f)\n"
+        "      --kp-omega <v>  Ganho proporcional - malha de velocidade (default: %.6f)\n"
+        "      --ki-omega <v>  Ganho integral - malha de velocidade     (default: %.6f)\n"
+        "      --kp-id <v>     Ganho proporcional - malha de corrente id (default: %.6f)\n"
+        "      --ki-id <v>     Ganho integral - malha de corrente id     (default: %.6f)\n"
+        "      --kp-iq <v>     Ganho proporcional - malha de corrente iq (default: %.6f)\n"
+        "      --ki-iq <v>     Ganho integral - malha de corrente iq     (default: %.6f)\n"
         "  -h, --help          Mostra esta mensagem de ajuda\n\n"
         "Observacao: a simulacao reproduz o chaveamento REAL do inversor\n"
         "(comparacao do duty cycle com uma portadora triangular), nao um\n"
-        "modelo de valor medio. Por isso o passo de integracao (dt) e\n"
-        "derivado automaticamente de Fsw e PwmSamples (dt = 1/Fsw / PwmSamples),\n"
-        "e mudar -s/--fsw agora tem efeito real no resultado (ripple de\n"
-        "corrente, de torque, etc).\n",
+        "modelo de valor medio. Por isso, se -d/--dt nao for informado, o\n"
+        "passo de integracao e derivado automaticamente de Fsw e PwmSamples\n"
+        "(dt = 1/Fsw / PwmSamples), e mudar -s/--fsw tem efeito real no\n"
+        "resultado (ripple de corrente, de torque, etc). Se -d/--dt for\n"
+        "informado explicitamente, ele e usado no lugar do calculo\n"
+        "automatico (util para comparar com um passo fixo), mas um aviso\n"
+        "e emitido caso ele seja grande demais para resolver o chaveamento.\n",
         prog,
         DEFAULT_OUTPUT_FILE,
         (double)DEFAULT_MOTOR_RS,
@@ -158,7 +219,16 @@ static void usage(const char *prog)
         DEFAULT_MOTOR_PARES_DE_POLOS,
         (double)DEFAULT_MOTOR_KT,
         (double)DEFAULT_SVPWM_HZ,
-        DEFAULT_PWM_SAMPLES);
+        DEFAULT_PWM_SAMPLES,
+        (double)DEFAULT_SIM_TI,
+        (double)DEFAULT_SIM_TF,
+        (double)DEFAULT_VDC,
+        (double)DEFAULT_KP_OMEGA,
+        (double)DEFAULT_KI_OMEGA,
+        (double)DEFAULT_KP_ID,
+        (double)DEFAULT_KI_ID,
+        (double)DEFAULT_KP_IQ,
+        (double)DEFAULT_KI_IQ);
 }
 
 /* --------------------------------------------------------------------
@@ -241,6 +311,26 @@ static int parse_config_file(const char *path, sim_args_t *args)
             args->Fsw = atof(v);
         else if (strcasecmp(key, "PwmSamples") == 0)
             args->PwmSamples = atoi(v);
+        else if (strcasecmp(key, "Ti") == 0)
+            args->Ti = atof(v);
+        else if (strcasecmp(key, "Tf") == 0)
+            args->Tf = atof(v);
+        else if (strcasecmp(key, "Dt") == 0)
+            args->Dt = atof(v);
+        else if (strcasecmp(key, "Vdc") == 0)
+            args->Vdc = atof(v);
+        else if (strcasecmp(key, "KpOmega") == 0)
+            args->KpOmega = atof(v);
+        else if (strcasecmp(key, "KiOmega") == 0)
+            args->KiOmega = atof(v);
+        else if (strcasecmp(key, "KpId") == 0)
+            args->KpId = atof(v);
+        else if (strcasecmp(key, "KiId") == 0)
+            args->KiId = atof(v);
+        else if (strcasecmp(key, "KpIq") == 0)
+            args->KpIq = atof(v);
+        else if (strcasecmp(key, "KiIq") == 0)
+            args->KiIq = atof(v);
         else if (strcasecmp(key, "file") == 0 || strcasecmp(key, "filename") == 0)
         {
             strncpy(args->filename, v, sizeof(args->filename) - 1);
@@ -274,6 +364,16 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
     args->Kt = (double)DEFAULT_MOTOR_KT;
     args->Fsw        = DEFAULT_SVPWM_HZ;
     args->PwmSamples = DEFAULT_PWM_SAMPLES;
+    args->Ti = (double)DEFAULT_SIM_TI;
+    args->Tf = (double)DEFAULT_SIM_TF;
+    args->Dt = (double)DEFAULT_SIM_DT;
+    args->Vdc     = (double)DEFAULT_VDC;
+    args->KpOmega = (double)DEFAULT_KP_OMEGA;
+    args->KiOmega = (double)DEFAULT_KI_OMEGA;
+    args->KpId    = (double)DEFAULT_KP_ID;
+    args->KiId    = (double)DEFAULT_KI_ID;
+    args->KpIq    = (double)DEFAULT_KP_IQ;
+    args->KiIq    = (double)DEFAULT_KI_IQ;
 
     static struct option long_options[] =
     {
@@ -290,10 +390,20 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
         {"Kt",     required_argument, 0, 't'},
         {"fsw",         required_argument, 0, 's'},
         {"pwm-samples", required_argument, 0, 'n'},
+        {"ti",          required_argument, 0, 'i'},
+        {"tf",          required_argument, 0, 'e'},
+        {"dt",          required_argument, 0, 'd'},
+        {"vdc",      required_argument, 0, OPT_VDC},
+        {"kp-omega", required_argument, 0, OPT_KP_OMEGA},
+        {"ki-omega", required_argument, 0, OPT_KI_OMEGA},
+        {"kp-id",    required_argument, 0, OPT_KP_ID},
+        {"ki-id",    required_argument, 0, OPT_KI_ID},
+        {"kp-iq",    required_argument, 0, OPT_KP_IQ},
+        {"ki-iq",    required_argument, 0, OPT_KI_IQ},
         {"help",   no_argument,       0, 'h'},
         {0, 0, 0, 0}
     };
-    const char *optstring = "c:f:R:L:M:K:J:B:T:P:t:s:n:h";
+    const char *optstring = "c:f:R:L:M:K:J:B:T:P:t:s:n:i:e:d:h";
 
     int opt;
     int option_index;
@@ -360,6 +470,16 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
             case 't': args->Kt = atof(optarg); break;
             case 's': args->Fsw        = atof(optarg); break;
             case 'n': args->PwmSamples = atoi(optarg); break;
+            case 'i': args->Ti = atof(optarg); break;
+            case 'e': args->Tf = atof(optarg); break;
+            case 'd': args->Dt = atof(optarg); break;
+            case OPT_VDC:      args->Vdc     = atof(optarg); break;
+            case OPT_KP_OMEGA: args->KpOmega = atof(optarg); break;
+            case OPT_KI_OMEGA: args->KiOmega = atof(optarg); break;
+            case OPT_KP_ID:    args->KpId    = atof(optarg); break;
+            case OPT_KI_ID:    args->KiId    = atof(optarg); break;
+            case OPT_KP_IQ:    args->KpIq    = atof(optarg); break;
+            case OPT_KI_IQ:    args->KiIq    = atof(optarg); break;
             case 'h':
                 usage(argv[0]);
                 exit(EXIT_SUCCESS);
@@ -387,7 +507,20 @@ int main(int argc, char **argv)
     printf("  P  = %d\n", args.P);
     printf("  Kt = %.6f N.m/A\n", args.Kt);
     printf("  Fsw = %.1f Hz (chaveamento SVPWM real)\n", args.Fsw);
-    printf("  PwmSamples = %d passos finos por periodo Ts\n\n", args.PwmSamples);
+    printf("  PwmSamples = %d passos finos por periodo Ts\n", args.PwmSamples);
+    printf("  Ti = %.6f s\n", args.Ti);
+    printf("  Tf = %.6f s\n", args.Tf);
+    if (args.Dt > 0.0)
+        printf("  Dt = %.9e s (explicito, sobrescreve o calculo automatico)\n", args.Dt);
+    else
+        printf("  Dt = automatico (Ts / PwmSamples)\n");
+    printf("  Vdc = %.6f V\n", args.Vdc);
+    printf("  Controlador de velocidade: Kp = %.6f | Ki = %.6f\n",
+           args.KpOmega, args.KiOmega);
+    printf("  Controlador de corrente id: Kp = %.6f | Ki = %.6f\n",
+           args.KpId, args.KiId);
+    printf("  Controlador de corrente iq: Kp = %.6f | Ki = %.6f\n\n",
+           args.KpIq, args.KiIq);
 
     if (args.Fsw <= 0.0)
     {
@@ -398,6 +531,24 @@ int main(int argc, char **argv)
     if (args.PwmSamples < 2)
     {
         fprintf(stderr, "Erro: PwmSamples deve ser >= 2.\n");
+        return EXIT_FAILURE;
+    }
+
+    if (args.Tf <= args.Ti)
+    {
+        fprintf(stderr, "Erro: Tf deve ser maior que Ti.\n");
+        return EXIT_FAILURE;
+    }
+
+    if (args.Dt < 0.0)
+    {
+        fprintf(stderr, "Erro: Dt nao pode ser negativo.\n");
+        return EXIT_FAILURE;
+    }
+
+    if (args.Vdc <= 0.0)
+    {
+        fprintf(stderr, "Erro: Vdc deve ser > 0.\n");
         return EXIT_FAILURE;
     }
 
@@ -430,9 +581,9 @@ int main(int argc, char **argv)
     };
 
     svpwm_t pwm;
-    if (!svpwm_init(&pwm, (float)args.Fsw, 0.0f, VDC))
+    if (!svpwm_init(&pwm, (float)args.Fsw, 0.0f, (float)args.Vdc))
     {
-        fprintf(stderr, "Erro: falha ao inicializar o SVPWM (verifique Fsw e VDC).\n");
+        fprintf(stderr, "Erro: falha ao inicializar o SVPWM (verifique Fsw e Vdc).\n");
         return EXIT_FAILURE;
     }
 
@@ -440,13 +591,34 @@ int main(int argc, char **argv)
      * (Ts = 1/Fsw), para que a comparacao com a portadora triangular
      * -- e portanto o chaveamento real do inversor -- seja resolvida
      * no tempo. Isso faz com que mudar Fsw realmente altere o
-     * resultado da simulacao (ripple de corrente, torque, etc). */
-    float dt = pwm.Ts / (float)args.PwmSamples;
+     * resultado da simulacao (ripple de corrente, torque, etc).
+     * Se o usuario informar Dt explicitamente (> 0), ele sobrescreve
+     * esse calculo automatico. */
+    float dt;
+    if (args.Dt > 0.0)
+    {
+        dt = (float)args.Dt;
+
+        if (dt > pwm.Ts / 2.0f)
+        {
+            fprintf(stderr,
+                    "Aviso: Dt=%.6e s e maior que metade do periodo de "
+                    "chaveamento (Ts=%.6e s). O chaveamento real do "
+                    "inversor NAO sera resolvido corretamente; considere "
+                    "um Dt menor ou omita -d/--dt para o calculo "
+                    "automatico (Ts/PwmSamples).\n\n",
+                    (double)dt, (double)pwm.Ts);
+        }
+    }
+    else
+    {
+        dt = pwm.Ts / (float)args.PwmSamples;
+    }
 
     time_simulation_t time_sim =
     {
-        .t0 = SIM_TI,
-        .tf = SIM_TF,
+        .t0 = (float)args.Ti,
+        .tf = (float)args.Tf,
         .dt = dt
     };
 
@@ -465,25 +637,30 @@ int main(int argc, char **argv)
                 total_steps);
     }
 
-    inverter_t inverter = { .Vdc = VDC };
+    inverter_t inverter = { .Vdc = (float)args.Vdc };
 
     /* --------------------------------------------------------------
      *   CONTROLADORES PI
      * -------------------------------------------------------------- */
-    double dtOmega = 5e-4, kpOmega = 2.0,  kiOmega = 1.5;
-    double dtId    = 5e-4, kpId    = 6.0, kiId    = 2.0;
-    double dtIq    = 5e-4, kpIq    = 6.0, kiIq    = 2.0;
+    /* Os limites de saturacao das malhas de corrente (vd/vq) sao
+     * +-Vdc, calculados a partir do parametro Vdc informado. */
+    double vdc_max = args.Vdc;
+    double vdc_min = -args.Vdc;
+
+    double dtOmega = 5e-4;
+    double dtId    = 5e-4;
+    double dtIq    = 5e-4;
 
     PIController pi_omega, pi_d, pi_q;
 
-    pi_controller_init(&pi_omega, kpOmega, kiOmega, dtOmega,
+    pi_controller_init(&pi_omega, args.KpOmega, args.KiOmega, dtOmega,
                         true, PI_IQ_MIN, true, PI_IQ_MAX);
 
-    pi_controller_init(&pi_d, kpId, kiId, dtId,
-                        true, VDC_MIN, true, VDC_MAX);
+    pi_controller_init(&pi_d, args.KpId, args.KiId, dtId,
+                        true, vdc_min, true, vdc_max);
 
-    pi_controller_init(&pi_q, kpIq, kiIq, dtIq,
-                        true, VDC_MIN, true, VDC_MAX);
+    pi_controller_init(&pi_q, args.KpIq, args.KiIq, dtIq,
+                        true, vdc_min, true, vdc_max);
 
     /* --------------------------------------------------------------
      *   REFERENCIAS
