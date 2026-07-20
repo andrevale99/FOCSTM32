@@ -41,19 +41,20 @@
 /* ========================================================================
  *   PARAMETROS DA REDE / BARRAMENTO CC
  * ==================================================================== */
-#define DEFAULT_VDC   120.0f   /* V */
+#define DEFAULT_VDC 120.0f /* V */
 
 /* ========================================================================
  *   PARAMETROS DO MOTOR
  * ==================================================================== */
-#define DEFAULT_MOTOR_RS    1.5f            /* Ohm - resistencia de armadura   */
-#define DEFAULT_MOTOR_L     50e-3f          /* H   - indutancia de magnetizacao*/
-#define DEFAULT_MOTOR_M     0.0f            /* H   - indutancia mutua          */
-#define DEFAULT_MOTOR_KE    0.850f          /* constante eletrica (V/(rad/s))  */
-#define DEFAULT_MOTOR_KT    0.850f          /* constante de torque (N.m/A)     */
-#define DEFAULT_MOTOR_B     1e-3f           /* coeficiente de amortecimento    */
-#define DEFAULT_MOTOR_J     0.0036013854f   /* momento de inercia (kg.m^2)     */
-#define DEFAULT_MOTOR_PARES_DE_POLOS 4      /* numero de pares de polos (P)    */
+#define DEFAULT_MOTOR_RS 1.5f          /* Ohm - resistencia de armadura   */
+#define DEFAULT_MOTOR_L 50e-3f         /* H   - indutancia de magnetizacao*/
+#define DEFAULT_MOTOR_M 0.0f           /* H   - indutancia mutua          */
+#define DEFAULT_MOTOR_KE 0.850f        /* constante eletrica (V/(rad/s))  */
+#define DEFAULT_MOTOR_KT 0.850f        /* constante de torque (N.m/A)     */
+#define DEFAULT_MOTOR_B 1e-3f          /* coeficiente de amortecimento    */
+#define DEFAULT_MOTOR_J 0.0036013854f  /* momento de inercia (kg.m^2)     */
+#define DEFAULT_MOTOR_PARES_DE_POLOS 4 /* numero de pares de polos (P)    */
+#define DEFAULT_RPM_REFERENCE 1        /* numero de pares de polos (P)    */
 
 #define DEFAULT_TL 0.0f /* torque de carga (N.m) */
 
@@ -62,8 +63,8 @@
 /* ========================================================================
  *   PARAMETROS DO SVPWM (CHAVEAMENTO REAL)
  * ==================================================================== */
-#define DEFAULT_SVPWM_HZ    10000.0  /* Hz - frequencia de chaveamento     */
-#define DEFAULT_PWM_SAMPLES 20       /* passos finos de simulacao por Ts   */
+#define DEFAULT_SVPWM_HZ 10000.0 /* Hz - frequencia de chaveamento     */
+#define DEFAULT_PWM_SAMPLES 20   /* passos finos de simulacao por Ts   */
 
 /* ========================================================================
  *   LIMITES DOS CONTROLADORES
@@ -72,7 +73,7 @@
  * calculados em tempo de execucao em main() a partir de args.Vdc,
  * ja que Vdc agora e configuravel via CLI/arquivo de config. */
 
-#define PI_IQ_MAX 50.0
+#define PI_IQ_MAX 5.0
 #define PI_IQ_MIN (-PI_IQ_MAX)
 
 /* ========================================================================
@@ -80,16 +81,16 @@
  * ==================================================================== */
 #define DEFAULT_KP_OMEGA 2.0
 #define DEFAULT_KI_OMEGA 1.5
-#define DEFAULT_KP_ID    6.0
-#define DEFAULT_KI_ID    2.0
-#define DEFAULT_KP_IQ    6.0
-#define DEFAULT_KI_IQ    2.0
+#define DEFAULT_KP_ID 6.0
+#define DEFAULT_KI_ID 2.0
+#define DEFAULT_KP_IQ 6.0
+#define DEFAULT_KI_IQ 2.0
 
 /* ========================================================================
  *   PARAMETROS DA SIMULACAO
  * ==================================================================== */
-#define DEFAULT_SIM_TI 0.0f     /* s */
-#define DEFAULT_SIM_TF 1.0f     /* s */
+#define DEFAULT_SIM_TI 0.0f /* s */
+#define DEFAULT_SIM_TF 1.0f /* s */
 /* DEFAULT_SIM_DT = 0.0 significa "automatico": o passo de integracao e
  * derivado da frequencia de chaveamento do SVPWM (Ts / PwmSamples). Se
  * o usuario informar um Dt explicito (> 0), esse valor e usado
@@ -101,7 +102,7 @@
  * ==================================================================== */
 typedef struct
 {
-    char   filename[256];
+    char filename[256];
     double R;
     double L;
     double M;
@@ -109,20 +110,21 @@ typedef struct
     double J;
     double B;
     double Tl;
-    int    P;
+    int P;
     double Kt;
-    double Fsw;         /* frequencia de chaveamento do SVPWM [Hz]           */
-    int    PwmSamples;  /* passos finos de simulacao por periodo Ts do PWM  */
-    double Ti;          /* tempo inicial da simulacao [s]                   */
-    double Tf;          /* tempo final da simulacao [s]                     */
-    double Dt;           /* passo de integracao explicito [s] (0 = automatico) */
-    double Vdc;          /* tensao do barramento CC [V]                       */
-    double KpOmega;       /* ganho proporcional - malha de velocidade          */
-    double KiOmega;       /* ganho integral - malha de velocidade              */
-    double KpId;           /* ganho proporcional - malha de corrente id         */
-    double KiId;           /* ganho integral - malha de corrente id             */
-    double KpIq;           /* ganho proporcional - malha de corrente iq         */
-    double KiIq;           /* ganho integral - malha de corrente iq             */
+    double Fsw;     /* frequencia de chaveamento do SVPWM [Hz]           */
+    int PwmSamples; /* passos finos de simulacao por periodo Ts do PWM  */
+    double Ti;      /* tempo inicial da simulacao [s]                   */
+    double Tf;      /* tempo final da simulacao [s]                     */
+    double Dt;      /* passo de integracao explicito [s] (0 = automatico) */
+    double Vdc;     /* tensao do barramento CC [V]                       */
+    double KpOmega; /* ganho proporcional - malha de velocidade          */
+    double KiOmega; /* ganho integral - malha de velocidade              */
+    double KpId;    /* ganho proporcional - malha de corrente id         */
+    double KiId;    /* ganho integral - malha de corrente id             */
+    double KpIq;    /* ganho proporcional - malha de corrente iq         */
+    double KiIq;    /* ganho integral - malha de corrente iq             */
+    double rpm;     /*referencia de velocidade*/
 } sim_args_t;
 
 /* Identificadores para opcoes de linha de comando que so existem na
@@ -142,93 +144,95 @@ enum
 static void usage(const char *prog)
 {
     fprintf(stderr,
-        "Uso: %s [opcoes]\n\n"
-        "Os parametros podem ser passados diretamente na linha de comando\n"
-        "OU atraves de um arquivo texto de configuracao (-c/--config).\n"
-        "Se um parametro for informado nos dois lugares, o valor passado\n"
-        "diretamente na linha de comando tem prioridade sobre o arquivo.\n\n"
-        "Formato do arquivo de configuracao (uma linha por parametro):\n"
-        "  R=1.5\n"
-        "  L=0.05\n"
-        "  M=0.0\n"
-        "  Ke=0.85\n"
-        "  J=0.0036013854\n"
-        "  B=0.001\n"
-        "  Tl=0.0\n"
-        "  P=4\n"
-        "  Kt=0.85\n"
-        "  Fsw=10000\n"
-        "  PwmSamples=20\n"
-        "  Ti=0.0\n"
-        "  Tf=1.0\n"
-        "  Dt=0.0\n"
-        "  Vdc=120.0\n"
-        "  KpOmega=2.0\n"
-        "  KiOmega=1.5\n"
-        "  KpId=6.0\n"
-        "  KiId=2.0\n"
-        "  KpIq=6.0\n"
-        "  KiIq=2.0\n"
-        "  file=saida.csv\n"
-        "(linhas em branco ou iniciadas com '#' sao ignoradas)\n\n"
-        "Opcoes:\n"
-        "  -c, --config <arquivo> Arquivo texto com os parametros\n"
-        "  -f, --file <nome>   Nome do arquivo CSV de saida (default: %s)\n"
-        "  -R, --R <valor>     Resistencia de armadura [Ohm]      (default: %.6f)\n"
-        "  -L, --L <valor>     Indutancia de magnetizacao [H]     (default: %.6f)\n"
-        "  -M, --M <valor>     Indutancia mutua [H]                (default: %.6f)\n"
-        "  -K, --Ke <valor>    Constante eletrica [V/(rad/s)]     (default: %.6f)\n"
-        "  -J, --J <valor>     Momento de inercia [kg.m^2]        (default: %.6f)\n"
-        "  -B, --B <valor>     Coeficiente de amortecimento       (default: %.6f)\n"
-        "  -T, --Tl <valor>    Torque de carga [N.m]              (default: %.6f)\n"
-        "  -P, --P <valor>     Numero de pares de polos           (default: %d)\n"
-        "  -t, --Kt <valor>    Constante de torque [N.m/A]        (default: %.6f)\n"
-        "  -s, --fsw <valor>   Frequencia de chaveamento do SVPWM [Hz] (default: %.1f)\n"
-        "  -n, --pwm-samples <n> Passos finos de simulacao por periodo Ts do PWM\n"
-        "                       (default: %d; maior = mais fiel, porem mais lento)\n"
-        "  -i, --ti <valor>    Tempo inicial da simulacao [s]     (default: %.6f)\n"
-        "  -e, --tf <valor>    Tempo final da simulacao [s]       (default: %.6f)\n"
-        "  -d, --dt <valor>    Passo de integracao explicito [s]  (default: automatico,\n"
-        "                       dt = 1/Fsw / PwmSamples; informe > 0 para sobrescrever)\n"
-        "      --vdc <valor>   Tensao do barramento CC [V]        (default: %.6f)\n"
-        "      --kp-omega <v>  Ganho proporcional - malha de velocidade (default: %.6f)\n"
-        "      --ki-omega <v>  Ganho integral - malha de velocidade     (default: %.6f)\n"
-        "      --kp-id <v>     Ganho proporcional - malha de corrente id (default: %.6f)\n"
-        "      --ki-id <v>     Ganho integral - malha de corrente id     (default: %.6f)\n"
-        "      --kp-iq <v>     Ganho proporcional - malha de corrente iq (default: %.6f)\n"
-        "      --ki-iq <v>     Ganho integral - malha de corrente iq     (default: %.6f)\n"
-        "  -h, --help          Mostra esta mensagem de ajuda\n\n"
-        "Observacao: a simulacao reproduz o chaveamento REAL do inversor\n"
-        "(comparacao do duty cycle com uma portadora triangular), nao um\n"
-        "modelo de valor medio. Por isso, se -d/--dt nao for informado, o\n"
-        "passo de integracao e derivado automaticamente de Fsw e PwmSamples\n"
-        "(dt = 1/Fsw / PwmSamples), e mudar -s/--fsw tem efeito real no\n"
-        "resultado (ripple de corrente, de torque, etc). Se -d/--dt for\n"
-        "informado explicitamente, ele e usado no lugar do calculo\n"
-        "automatico (util para comparar com um passo fixo), mas um aviso\n"
-        "e emitido caso ele seja grande demais para resolver o chaveamento.\n",
-        prog,
-        DEFAULT_OUTPUT_FILE,
-        (double)DEFAULT_MOTOR_RS,
-        (double)DEFAULT_MOTOR_L,
-        (double)DEFAULT_MOTOR_M,
-        (double)DEFAULT_MOTOR_KE,
-        (double)DEFAULT_MOTOR_J,
-        (double)DEFAULT_MOTOR_B,
-        (double)DEFAULT_TL,
-        DEFAULT_MOTOR_PARES_DE_POLOS,
-        (double)DEFAULT_MOTOR_KT,
-        (double)DEFAULT_SVPWM_HZ,
-        DEFAULT_PWM_SAMPLES,
-        (double)DEFAULT_SIM_TI,
-        (double)DEFAULT_SIM_TF,
-        (double)DEFAULT_VDC,
-        (double)DEFAULT_KP_OMEGA,
-        (double)DEFAULT_KI_OMEGA,
-        (double)DEFAULT_KP_ID,
-        (double)DEFAULT_KI_ID,
-        (double)DEFAULT_KP_IQ,
-        (double)DEFAULT_KI_IQ);
+            "Uso: %s [opcoes]\n\n"
+            "Os parametros podem ser passados diretamente na linha de comando\n"
+            "OU atraves de um arquivo texto de configuracao (-c/--config).\n"
+            "Se um parametro for informado nos dois lugares, o valor passado\n"
+            "diretamente na linha de comando tem prioridade sobre o arquivo.\n\n"
+            "Formato do arquivo de configuracao (uma linha por parametro):\n"
+            "  R=1.5\n"
+            "  L=0.05\n"
+            "  M=0.0\n"
+            "  Ke=0.85\n"
+            "  J=0.0036013854\n"
+            "  B=0.001\n"
+            "  Tl=0.0\n"
+            "  P=4\n"
+            "  Kt=0.85\n"
+            "  Fsw=10000\n"
+            "  PwmSamples=20\n"
+            "  Ti=0.0\n"
+            "  Tf=1.0\n"
+            "  Dt=0.0\n"
+            "  Vdc=120.0\n"
+            "  KpOmega=2.0\n"
+            "  KiOmega=1.5\n"
+            "  KpId=6.0\n"
+            "  KiId=2.0\n"
+            "  KpIq=6.0\n"
+            "  KiIq=2.0\n"
+            "  file=saida.csv\n"
+            "(linhas em branco ou iniciadas com '#' sao ignoradas)\n\n"
+            "Opcoes:\n"
+            "  -c, --config <arquivo> Arquivo texto com os parametros\n"
+            "  -f, --file <nome>   Nome do arquivo CSV de saida (default: %s)\n"
+            "  -R, --R <valor>     Resistencia de armadura [Ohm]      (default: %.6f)\n"
+            "  -L, --L <valor>     Indutancia de magnetizacao [H]     (default: %.6f)\n"
+            "  -M, --M <valor>     Indutancia mutua [H]                (default: %.6f)\n"
+            "  -K, --Ke <valor>    Constante eletrica [V/(rad/s)]     (default: %.6f)\n"
+            "  -J, --J <valor>     Momento de inercia [kg.m^2]        (default: %.6f)\n"
+            "  -B, --B <valor>     Coeficiente de amortecimento       (default: %.6f)\n"
+            "  -T, --Tl <valor>    Torque de carga [N.m]              (default: %.6f)\n"
+            "  -P, --P <valor>     Numero de pares de polos           (default: %d)\n"
+            "  -t, --Kt <valor>    Constante de torque [N.m/A]        (default: %.6f)\n"
+            "  -s, --fsw <valor>   Frequencia de chaveamento do SVPWM [Hz] (default: %.1f)\n"
+            "  -n, --pwm-samples <n> Passos finos de simulacao por periodo Ts do PWM\n"
+            "                       (default: %d; maior = mais fiel, porem mais lento)\n"
+            "  -i, --ti <valor>    Tempo inicial da simulacao [s]     (default: %.6f)\n"
+            "  -e, --tf <valor>    Tempo final da simulacao [s]       (default: %.6f)\n"
+            "  -d, --dt <valor>    Passo de integracao explicito [s]  (default: automatico,\n"
+            "                       dt = 1/Fsw / PwmSamples; informe > 0 para sobrescrever)\n"
+            "      --vdc <valor>   Tensao do barramento CC [V]        (default: %.6f)\n"
+            "      --kp-omega <v>  Ganho proporcional - malha de velocidade (default: %.6f)\n"
+            "      --ki-omega <v>  Ganho integral - malha de velocidade     (default: %.6f)\n"
+            "      --kp-id <v>     Ganho proporcional - malha de corrente id (default: %.6f)\n"
+            "      --ki-id <v>     Ganho integral - malha de corrente id     (default: %.6f)\n"
+            "      --kp-iq <v>     Ganho proporcional - malha de corrente iq (default: %.6f)\n"
+            "      --ki-iq <v>     Ganho integral - malha de corrente iq     (default: %.6f)\n"
+            "      --rpm               Referencia de velocidade em RPM       (default: %.2f)\n"
+            "  -h, --help          Mostra esta mensagem de ajuda\n\n"
+            "Observacao: a simulacao reproduz o chaveamento REAL do inversor\n"
+            "(comparacao do duty cycle com uma portadora triangular), nao um\n"
+            "modelo de valor medio. Por isso, se -d/--dt nao for informado, o\n"
+            "passo de integracao e derivado automaticamente de Fsw e PwmSamples\n"
+            "(dt = 1/Fsw / PwmSamples), e mudar -s/--fsw tem efeito real no\n"
+            "resultado (ripple de corrente, de torque, etc). Se -d/--dt for\n"
+            "informado explicitamente, ele e usado no lugar do calculo\n"
+            "automatico (util para comparar com um passo fixo), mas um aviso\n"
+            "e emitido caso ele seja grande demais para resolver o chaveamento.\n",
+            prog,
+            DEFAULT_OUTPUT_FILE,
+            (double)DEFAULT_MOTOR_RS,
+            (double)DEFAULT_MOTOR_L,
+            (double)DEFAULT_MOTOR_M,
+            (double)DEFAULT_MOTOR_KE,
+            (double)DEFAULT_MOTOR_J,
+            (double)DEFAULT_MOTOR_B,
+            (double)DEFAULT_TL,
+            DEFAULT_MOTOR_PARES_DE_POLOS,
+            (double)DEFAULT_MOTOR_KT,
+            (double)DEFAULT_SVPWM_HZ,
+            DEFAULT_PWM_SAMPLES,
+            (double)DEFAULT_SIM_TI,
+            (double)DEFAULT_SIM_TF,
+            (double)DEFAULT_VDC,
+            (double)DEFAULT_KP_OMEGA,
+            (double)DEFAULT_KI_OMEGA,
+            (double)DEFAULT_KP_ID,
+            (double)DEFAULT_KI_ID,
+            (double)DEFAULT_KP_IQ,
+            (double)DEFAULT_KI_IQ,
+            (double)DEFAULT_RPM_REFERENCE);
 }
 
 /* --------------------------------------------------------------------
@@ -261,7 +265,7 @@ static int parse_config_file(const char *path, sim_args_t *args)
         if (*p == '\0' || *p == '\n' || *p == '#' || *p == '\r')
             continue;
 
-        char key[64]  = {0};
+        char key[64] = {0};
         char value[256] = {0};
 
         /* aceita "CHAVE = VALOR" ou "CHAVE=VALOR" */
@@ -331,6 +335,8 @@ static int parse_config_file(const char *path, sim_args_t *args)
             args->KpIq = atof(v);
         else if (strcasecmp(key, "KiIq") == 0)
             args->KiIq = atof(v);
+        else if (strcasecmp(key, "rpm") == 0)
+            args->rpm = atof(v);
         else if (strcasecmp(key, "file") == 0 || strcasecmp(key, "filename") == 0)
         {
             strncpy(args->filename, v, sizeof(args->filename) - 1);
@@ -340,7 +346,8 @@ static int parse_config_file(const char *path, sim_args_t *args)
         {
             fprintf(stderr,
                     "Aviso: linha %d do arquivo de configuracao ignorada "
-                    "(chave desconhecida): '%s'\n", line_no, key);
+                    "(chave desconhecida): '%s'\n",
+                    line_no, key);
         }
     }
 
@@ -353,56 +360,55 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
     /* valores padrao */
     strncpy(args->filename, DEFAULT_OUTPUT_FILE, sizeof(args->filename) - 1);
     args->filename[sizeof(args->filename) - 1] = '\0';
-    args->R  = (double)DEFAULT_MOTOR_RS;
-    args->L  = (double)DEFAULT_MOTOR_L;
-    args->M  = (double)DEFAULT_MOTOR_M;
+    args->R = (double)DEFAULT_MOTOR_RS;
+    args->L = (double)DEFAULT_MOTOR_L;
+    args->M = (double)DEFAULT_MOTOR_M;
     args->Ke = (double)DEFAULT_MOTOR_KE;
-    args->J  = (double)DEFAULT_MOTOR_J;
-    args->B  = (double)DEFAULT_MOTOR_B;
+    args->J = (double)DEFAULT_MOTOR_J;
+    args->B = (double)DEFAULT_MOTOR_B;
     args->Tl = (double)DEFAULT_TL;
-    args->P  = DEFAULT_MOTOR_PARES_DE_POLOS;
+    args->P = DEFAULT_MOTOR_PARES_DE_POLOS;
     args->Kt = (double)DEFAULT_MOTOR_KT;
-    args->Fsw        = DEFAULT_SVPWM_HZ;
+    args->Fsw = DEFAULT_SVPWM_HZ;
     args->PwmSamples = DEFAULT_PWM_SAMPLES;
     args->Ti = (double)DEFAULT_SIM_TI;
     args->Tf = (double)DEFAULT_SIM_TF;
     args->Dt = (double)DEFAULT_SIM_DT;
-    args->Vdc     = (double)DEFAULT_VDC;
+    args->Vdc = (double)DEFAULT_VDC;
     args->KpOmega = (double)DEFAULT_KP_OMEGA;
     args->KiOmega = (double)DEFAULT_KI_OMEGA;
-    args->KpId    = (double)DEFAULT_KP_ID;
-    args->KiId    = (double)DEFAULT_KI_ID;
-    args->KpIq    = (double)DEFAULT_KP_IQ;
-    args->KiIq    = (double)DEFAULT_KI_IQ;
+    args->KpId = (double)DEFAULT_KP_ID;
+    args->KiId = (double)DEFAULT_KI_ID;
+    args->KpIq = (double)DEFAULT_KP_IQ;
+    args->KiIq = (double)DEFAULT_KI_IQ;
 
     static struct option long_options[] =
-    {
-        {"config", required_argument, 0, 'c'},
-        {"file",   required_argument, 0, 'f'},
-        {"R",      required_argument, 0, 'R'},
-        {"L",      required_argument, 0, 'L'},
-        {"M",      required_argument, 0, 'M'},
-        {"Ke",     required_argument, 0, 'K'},
-        {"J",      required_argument, 0, 'J'},
-        {"B",      required_argument, 0, 'B'},
-        {"Tl",     required_argument, 0, 'T'},
-        {"P",      required_argument, 0, 'P'},
-        {"Kt",     required_argument, 0, 't'},
-        {"fsw",         required_argument, 0, 's'},
-        {"pwm-samples", required_argument, 0, 'n'},
-        {"ti",          required_argument, 0, 'i'},
-        {"tf",          required_argument, 0, 'e'},
-        {"dt",          required_argument, 0, 'd'},
-        {"vdc",      required_argument, 0, OPT_VDC},
-        {"kp-omega", required_argument, 0, OPT_KP_OMEGA},
-        {"ki-omega", required_argument, 0, OPT_KI_OMEGA},
-        {"kp-id",    required_argument, 0, OPT_KP_ID},
-        {"ki-id",    required_argument, 0, OPT_KI_ID},
-        {"kp-iq",    required_argument, 0, OPT_KP_IQ},
-        {"ki-iq",    required_argument, 0, OPT_KI_IQ},
-        {"help",   no_argument,       0, 'h'},
-        {0, 0, 0, 0}
-    };
+        {
+            {"config", required_argument, 0, 'c'},
+            {"file", required_argument, 0, 'f'},
+            {"R", required_argument, 0, 'R'},
+            {"L", required_argument, 0, 'L'},
+            {"M", required_argument, 0, 'M'},
+            {"Ke", required_argument, 0, 'K'},
+            {"J", required_argument, 0, 'J'},
+            {"B", required_argument, 0, 'B'},
+            {"Tl", required_argument, 0, 'T'},
+            {"P", required_argument, 0, 'P'},
+            {"Kt", required_argument, 0, 't'},
+            {"fsw", required_argument, 0, 's'},
+            {"pwm-samples", required_argument, 0, 'n'},
+            {"ti", required_argument, 0, 'i'},
+            {"tf", required_argument, 0, 'e'},
+            {"dt", required_argument, 0, 'd'},
+            {"vdc", required_argument, 0, OPT_VDC},
+            {"kp-omega", required_argument, 0, OPT_KP_OMEGA},
+            {"ki-omega", required_argument, 0, OPT_KI_OMEGA},
+            {"kp-id", required_argument, 0, OPT_KP_ID},
+            {"ki-id", required_argument, 0, OPT_KI_ID},
+            {"kp-iq", required_argument, 0, OPT_KP_IQ},
+            {"ki-iq", required_argument, 0, OPT_KI_IQ},
+            {"help", no_argument, 0, 'h'},
+            {0, 0, 0, 0}};
     const char *optstring = "c:f:R:L:M:K:J:B:T:P:t:s:n:i:e:d:h";
 
     int opt;
@@ -415,7 +421,7 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
      * ---------------------------------------------------------------- */
     char config_path[256] = "";
 
-    opterr = 0;   /* suprime mensagens de erro nesta passada */
+    opterr = 0; /* suprime mensagens de erro nesta passada */
     optind = 1;
     option_index = 0;
     while ((opt = getopt_long(argc, argv, optstring, long_options, &option_index)) != -1)
@@ -452,40 +458,82 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
     {
         switch (opt)
         {
-            case 'c':
-                /* ja tratado na 1a passada */
-                break;
-            case 'f':
-                strncpy(args->filename, optarg, sizeof(args->filename) - 1);
-                args->filename[sizeof(args->filename) - 1] = '\0';
-                break;
-            case 'R': args->R  = atof(optarg); break;
-            case 'L': args->L  = atof(optarg); break;
-            case 'M': args->M  = atof(optarg); break;
-            case 'K': args->Ke = atof(optarg); break;
-            case 'J': args->J  = atof(optarg); break;
-            case 'B': args->B  = atof(optarg); break;
-            case 'T': args->Tl = atof(optarg); break;
-            case 'P': args->P  = atoi(optarg); break;
-            case 't': args->Kt = atof(optarg); break;
-            case 's': args->Fsw        = atof(optarg); break;
-            case 'n': args->PwmSamples = atoi(optarg); break;
-            case 'i': args->Ti = atof(optarg); break;
-            case 'e': args->Tf = atof(optarg); break;
-            case 'd': args->Dt = atof(optarg); break;
-            case OPT_VDC:      args->Vdc     = atof(optarg); break;
-            case OPT_KP_OMEGA: args->KpOmega = atof(optarg); break;
-            case OPT_KI_OMEGA: args->KiOmega = atof(optarg); break;
-            case OPT_KP_ID:    args->KpId    = atof(optarg); break;
-            case OPT_KI_ID:    args->KiId    = atof(optarg); break;
-            case OPT_KP_IQ:    args->KpIq    = atof(optarg); break;
-            case OPT_KI_IQ:    args->KiIq    = atof(optarg); break;
-            case 'h':
-                usage(argv[0]);
-                exit(EXIT_SUCCESS);
-            default:
-                usage(argv[0]);
-                exit(EXIT_FAILURE);
+        case 'c':
+            /* ja tratado na 1a passada */
+            break;
+        case 'f':
+            strncpy(args->filename, optarg, sizeof(args->filename) - 1);
+            args->filename[sizeof(args->filename) - 1] = '\0';
+            break;
+        case 'R':
+            args->R = atof(optarg);
+            break;
+        case 'L':
+            args->L = atof(optarg);
+            break;
+        case 'M':
+            args->M = atof(optarg);
+            break;
+        case 'K':
+            args->Ke = atof(optarg);
+            break;
+        case 'J':
+            args->J = atof(optarg);
+            break;
+        case 'B':
+            args->B = atof(optarg);
+            break;
+        case 'T':
+            args->Tl = atof(optarg);
+            break;
+        case 'P':
+            args->P = atoi(optarg);
+            break;
+        case 't':
+            args->Kt = atof(optarg);
+            break;
+        case 's':
+            args->Fsw = atof(optarg);
+            break;
+        case 'n':
+            args->PwmSamples = atoi(optarg);
+            break;
+        case 'i':
+            args->Ti = atof(optarg);
+            break;
+        case 'e':
+            args->Tf = atof(optarg);
+            break;
+        case 'd':
+            args->Dt = atof(optarg);
+            break;
+        case OPT_VDC:
+            args->Vdc = atof(optarg);
+            break;
+        case OPT_KP_OMEGA:
+            args->KpOmega = atof(optarg);
+            break;
+        case OPT_KI_OMEGA:
+            args->KiOmega = atof(optarg);
+            break;
+        case OPT_KP_ID:
+            args->KpId = atof(optarg);
+            break;
+        case OPT_KI_ID:
+            args->KiId = atof(optarg);
+            break;
+        case OPT_KP_IQ:
+            args->KpIq = atof(optarg);
+            break;
+        case OPT_KI_IQ:
+            args->KiIq = atof(optarg);
+            break;
+        case 'h':
+            usage(argv[0]);
+            exit(EXIT_SUCCESS);
+        default:
+            usage(argv[0]);
+            exit(EXIT_FAILURE);
         }
     }
 }
@@ -510,6 +558,7 @@ int main(int argc, char **argv)
     printf("  PwmSamples = %d passos finos por periodo Ts\n", args.PwmSamples);
     printf("  Ti = %.6f s\n", args.Ti);
     printf("  Tf = %.6f s\n", args.Tf);
+    printf("  rpm = %.6f RPM\n", args.rpm);
     if (args.Dt > 0.0)
         printf("  Dt = %.9e s (explicito, sobrescreve o calculo automatico)\n", args.Dt);
     else
@@ -556,29 +605,28 @@ int main(int argc, char **argv)
      *   OBJETOS DA PLANTA
      * -------------------------------------------------------------- */
     bldc_t motor =
-    {
-        .iabc = {0.0f, 0.0f, 0.0f},
+        {
+            .iabc = {0.0f, 0.0f, 0.0f},
 
-        .R = (float)args.R,
-        .L = (float)args.L,
-        .M = (float)args.M,
-        .Ke = (float)args.Ke,
+            .R = (float)args.R,
+            .L = (float)args.L,
+            .M = (float)args.M,
+            .Ke = (float)args.Ke,
 
-        .J = (float)args.J,
-        .B = (float)args.B,
-        .Te = 0.0f,
+            .J = (float)args.J,
+            .B = (float)args.B,
+            .Te = 0.0f,
 
-        .P = args.P,
-        .Kt = (float)args.Kt,
+            .P = args.P,
+            .Kt = (float)args.Kt,
 
-        .theta_e = 0.0f,
-        .theta_r = 0.0f,
+            .theta_e = 0.0f,
+            .theta_r = 0.0f,
 
-        .omega_r = 0.0f,
-        .omega_e = 0.0f,
+            .omega_r = 0.0f,
+            .omega_e = 0.0f,
 
-        .log = NULL
-    };
+            .log = NULL};
 
     svpwm_t pwm;
     if (!svpwm_init(&pwm, (float)args.Fsw, 0.0f, (float)args.Vdc))
@@ -616,11 +664,10 @@ int main(int argc, char **argv)
     }
 
     time_simulation_t time_sim =
-    {
-        .t0 = (float)args.Ti,
-        .tf = (float)args.Tf,
-        .dt = dt
-    };
+        {
+            .t0 = (float)args.Ti,
+            .tf = (float)args.Tf,
+            .dt = dt};
 
     long total_steps =
         (long)((double)(time_sim.tf - time_sim.t0) / (double)dt + 0.5) + 1;
@@ -637,7 +684,7 @@ int main(int argc, char **argv)
                 total_steps);
     }
 
-    inverter_t inverter = { .Vdc = (float)args.Vdc };
+    inverter_t inverter = {.Vdc = (float)args.Vdc};
 
     /* --------------------------------------------------------------
      *   CONTROLADORES PI
@@ -648,26 +695,26 @@ int main(int argc, char **argv)
     double vdc_min = -args.Vdc;
 
     double dtOmega = 5e-4;
-    double dtId    = 5e-4;
-    double dtIq    = 5e-4;
+    double dtId = 5e-4;
+    double dtIq = 5e-4;
 
     PIController pi_omega, pi_d, pi_q;
 
     pi_controller_init(&pi_omega, args.KpOmega, args.KiOmega, dtOmega,
-                        true, PI_IQ_MIN, true, PI_IQ_MAX);
+                       true, PI_IQ_MIN, true, PI_IQ_MAX);
 
     pi_controller_init(&pi_d, args.KpId, args.KiId, dtId,
-                        true, vdc_min, true, vdc_max);
+                       true, vdc_min, true, vdc_max);
 
     pi_controller_init(&pi_q, args.KpIq, args.KiIq, dtIq,
-                        true, vdc_min, true, vdc_max);
+                       true, vdc_min, true, vdc_max);
 
     /* --------------------------------------------------------------
      *   REFERENCIAS
      * -------------------------------------------------------------- */
     double id_ref = 0.0; /* motor de imas permanentes: referencia de eixo d = 0 */
 
-    float rpm_ref = 25.0f;
+    float rpm_ref = (float)args.rpm;
     float omega_ref = rpm_to_rads(rpm_ref);
     printf("omega_ref = %.6f rad/s\n", omega_ref);
 
@@ -707,7 +754,7 @@ int main(int argc, char **argv)
         /* C. Transformada de Clarke (abc -> alpha-beta) */
         float i_alpha, i_beta;
         clarke_transform(motor.iabc[0], motor.iabc[1], motor.iabc[2],
-                          &i_alpha, &i_beta);
+                         &i_alpha, &i_beta);
 
         /* Transformada de Park (alpha-beta -> dq) */
         float i_d, i_q;
@@ -720,7 +767,7 @@ int main(int argc, char **argv)
         /* E. Transformada inversa de Park (dq -> alpha-beta) */
         float v_alpha, v_beta;
         park_inverse_transform((float)vd_ref, (float)vq_ref, theta_e,
-                                &v_alpha, &v_beta);
+                               &v_alpha, &v_beta);
 
         /* F. SVPWM: duty cycles de referencia (sinal modulante) */
         float duty_a, duty_b, duty_c;
@@ -739,7 +786,7 @@ int main(int argc, char **argv)
          *    braco), nao mais do valor medio continuo */
         float Vabc[3];
         inverter_output_voltage(&inverter, (float)gate_a, (float)gate_b,
-                                 (float)gate_c, Vabc);
+                                (float)gate_c, Vabc);
 
         /* I. Atualizacao da planta (motor BLDC) */
         bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
