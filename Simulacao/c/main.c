@@ -73,7 +73,7 @@
  * calculados em tempo de execucao em main() a partir de args.Vdc,
  * ja que Vdc agora e configuravel via CLI/arquivo de config. */
 
-#define PI_IQ_MAX 5.0
+#define PI_IQ_MAX 8
 #define PI_IQ_MIN (-PI_IQ_MAX)
 
 /* ========================================================================
@@ -789,7 +789,7 @@ int main(int argc, char **argv)
                                 (float)gate_c, Vabc);
 
         /* I. Atualizacao da planta (motor BLDC) */
-        bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
+        bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, true);
 
         /* J. Log dos dados */
         fprintf(log_file,

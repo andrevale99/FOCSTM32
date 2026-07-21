@@ -1,0 +1,49 @@
+# ==========================================================
+#   Arquivo de parametros da simulacao closedloop
+#   Uso: ./closedloop -c params.txt
+#
+#   Formato: CHAVE=VALOR (tambem aceita "CHAVE VALOR")
+#   Linhas em branco ou iniciadas com '#' sao ignoradas.
+#   Prioridade: argumentos de linha de comando > este arquivo > default
+# ==========================================================
+
+# --- Parametros do motor ---
+R  = 0.388           # Ohm  - resistencia de armadura
+L  = 2.28e-3         # H    - indutancia de magnetizacao
+M  = 0.56            # H    - indutancia mutua
+Ke = 1     # V/(rad/s) - constante eletrica
+J  = 1.0e-4         # kg.m^2 - momento de inercia
+B  = 1.0e-6         # coeficiente de amortecimento
+Tl = 5.0            # N.m  - torque de carga
+P  = 4             # numero de pares de polos
+Kt = 1     # N.m/A - constante de torque
+
+# --- Parametros do SVPWM (chaveamento real do inversor) ---
+Fsw        = 10000   # Hz - frequencia de chaveamento
+PwmSamples = 200    # passos finos de simulacao por periodo Ts
+                    # (maior = mais fiel ao chaveamento real, porem mais lento)
+
+# --- Parametros de tempo da simulacao ---
+Ti = 0.0                 # s - tempo inicial
+Tf = 0.15                 # s - tempo final
+Dt = 1e-6                # s - passo de integracao explicito
+                         # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
+                         #  informe um valor > 0 para sobrescrever o
+                         #  calculo automatico)
+
+# --- Barramento CC ---
+Vdc = 3000.0               # V - tensao do barramento CC
+
+# --- Controladores PI ---
+KpOmega = 1.0             # ganho proporcional - malha de velocidade
+KiOmega = 0.5            # ganho integral - malha de velocidade
+KpId    = 1.0             # ganho proporcional - malha de corrente id
+KiId    = 0.1             # ganho integral - malha de corrente id
+KpIq    = 1.0             # ganho proporcional - malha de corrente iq
+KiIq    = 0.1             # ganho integral - malha de corrente iq
+
+# --- Referencia de velocidade ---
+rpm=3666
+
+# --- Saida ---
+file = closedloop_simulation.csv
