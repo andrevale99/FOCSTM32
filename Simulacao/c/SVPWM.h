@@ -4,6 +4,8 @@
 #include <math.h>
 #include <stdbool.h>
 
+#include "transforms.h"
+
 #define SVPWM_TWO_PI (2.0f * M_PI)
 #define SVPWM_SQRT3_OVER_2 (0.8660254037844386f)
 
@@ -13,23 +15,23 @@
   */
 typedef struct
 {
-    /**
+  /**
 
-    * @brief Tensão do barramento CC.
-      */
-    float Vdc;
+  * @brief Tensão do barramento CC.
+    */
+  float Vdc;
 
-    /**
+  /**
 
-    * @brief Período de chaveamento.
-      */
-    float Ts;
+  * @brief Período de chaveamento.
+    */
+  float Ts;
 
-    /**
+  /**
 
-    * @brief Frequência de chaveamento.
-      */
-    float Hz;
+  * @brief Frequência de chaveamento.
+    */
+  float Hz;
 
 } svpwm_t;
 
@@ -39,23 +41,23 @@ typedef struct
   */
 typedef struct
 {
-    /**
+  /**
 
-    * @brief Setor do vetor espacial, de 1 a 6.
-      */
-    int sector;
+  * @brief Setor do vetor espacial, de 1 a 6.
+    */
+  int sector;
 
-    /**
+  /**
 
-    * @brief Ângulo do vetor em radianos.
-      */
-    float angle;
+  * @brief Ângulo do vetor em radianos.
+    */
+  float angle;
 
-    /**
+  /**
 
-    * @brief Magnitude do vetor.
-      */
-    float magnitude;
+  * @brief Magnitude do vetor.
+    */
+  float magnitude;
 
 } svpwm_sector_t;
 
@@ -68,17 +70,17 @@ static inline float svpwm_clamp(
     float min,
     float max)
 {
-    if (value < min)
-    {
-        return min;
-    }
+  if (value < min)
+  {
+    return min;
+  }
 
-    if (value > max)
-    {
-        return max;
-    }
+  if (value > max)
+  {
+    return max;
+  }
 
-    return value;
+  return value;
 }
 
 /**
@@ -113,36 +115,36 @@ static inline bool svpwm_init(
     float Ts,
     float Vdc)
 {
-    if (svpwm == NULL)
-    {
-        return false;
-    }
+  if (svpwm == NULL)
+  {
+    return false;
+  }
 
-    if (Vdc <= 0.0f)
-    {
-        return false;
-    }
+  if (Vdc <= 0.0f)
+  {
+    return false;
+  }
 
-    if (Ts <= 0.0f && Hz <= 0.0f)
-    {
-        return false;
-    }
+  if (Ts <= 0.0f && Hz <= 0.0f)
+  {
+    return false;
+  }
 
-    if (Ts == 0.0f)
-    {
-        Ts = 1.0f / Hz;
-    }
+  if (Ts == 0.0f)
+  {
+    Ts = 1.0f / Hz;
+  }
 
-    if (Hz == 0.0f)
-    {
-        Hz = 1.0f / Ts;
-    }
+  if (Hz == 0.0f)
+  {
+    Hz = 1.0f / Ts;
+  }
 
-    svpwm->Vdc = Vdc;
-    svpwm->Ts = Ts;
-    svpwm->Hz = Hz;
+  svpwm->Vdc = Vdc;
+  svpwm->Ts = Ts;
+  svpwm->Hz = Hz;
 
-    return true;
+  return true;
 }
 
 /**
@@ -236,89 +238,84 @@ static inline void svpwm_modulate(
     float *duty_b,
     float *duty_c)
 {
-    float Va_ref;
-    float Vb_ref;
-    float Vc_ref;
+  float Va_ref;
+  float Vb_ref;
+  float Vc_ref;
 
-    float Vmax;
-    float Vmin;
+  float Vmax;
+  float Vmin;
 
-    float Voffset;
+  float Voffset;
 
-    float Va_mod;
-    float Vb_mod;
-    float Vc_mod;
+  float Va_mod;
+  float Vb_mod;
+  float Vc_mod;
 
-    /*
+  /*
 
-    * Transformação inversa de Clarke
-      */
-    Va_ref = Valpha;
+  * Transformação inversa de Clarke
+    */
+  clarke_inverse_transform(Valpha, Vbeta,
+                           &Va_ref, &Vb_ref, &Vc_ref);
 
-    Vb_ref =
-        -0.5f * Valpha + SVPWM_SQRT3_OVER_2 * Vbeta;
+  /*
 
-    Vc_ref =
-        -0.5f * Valpha - SVPWM_SQRT3_OVER_2 * Vbeta;
+  * Maior e menor tensão
+    */
+  Vmax = fmaxf(
+      Va_ref,
+      fmaxf(Vb_ref, Vc_ref));
 
-    /*
+  Vmin = fminf(
+      Va_ref,
+      fminf(Vb_ref, Vc_ref));
 
-    * Maior e menor tensão
-      */
-    Vmax = fmaxf(
-        Va_ref,
-        fmaxf(Vb_ref, Vc_ref));
+  /*
 
-    Vmin = fminf(
-        Va_ref,
-        fminf(Vb_ref, Vc_ref));
+  * Tensão de modo comum
+    */
+  Voffset =
+      -0.5f * (Vmax + Vmin);
 
-    /*
+  /*
 
-    * Tensão de modo comum
-      */
-    Voffset =
-        -0.5f * (Vmax + Vmin);
+  * Tensões moduladas
+    */
+  Va_mod = Va_ref + Voffset;
+  Vb_mod = Vb_ref + Voffset;
+  Vc_mod = Vc_ref + Voffset;
 
-    /*
+  /*
 
-    * Tensões moduladas
-      */
-    Va_mod = Va_ref + Voffset;
-    Vb_mod = Vb_ref + Voffset;
-    Vc_mod = Vc_ref + Voffset;
+  * Duty cycles
+    */
+  *duty_a =
+      Va_mod / svpwm->Vdc + 0.5f;
 
-    /*
+  *duty_b =
+      Vb_mod / svpwm->Vdc + 0.5f;
 
-    * Duty cycles
-      */
-    *duty_a =
-        Va_mod / svpwm->Vdc + 0.5f;
+  *duty_c =
+      Vc_mod / svpwm->Vdc + 0.5f;
 
-    *duty_b =
-        Vb_mod / svpwm->Vdc + 0.5f;
+  /*
 
-    *duty_c =
-        Vc_mod / svpwm->Vdc + 0.5f;
+  * Limitação dos duty cycles
+    */
+  *duty_a = svpwm_clamp(
+      *duty_a,
+      0.0f,
+      1.0f);
 
-    /*
+  *duty_b = svpwm_clamp(
+      *duty_b,
+      0.0f,
+      1.0f);
 
-    * Limitação dos duty cycles
-      */
-    *duty_a = svpwm_clamp(
-        *duty_a,
-        0.0f,
-        1.0f);
-
-    *duty_b = svpwm_clamp(
-        *duty_b,
-        0.0f,
-        1.0f);
-
-    *duty_c = svpwm_clamp(
-        *duty_c,
-        0.0f,
-        1.0f);
+  *duty_c = svpwm_clamp(
+      *duty_c,
+      0.0f,
+      1.0f);
 }
 
 /**
@@ -388,48 +385,48 @@ static inline svpwm_sector_t svpwm_get_sector(
     float alpha,
     float beta)
 {
-    svpwm_sector_t result;
+  svpwm_sector_t result;
 
-    /*
+  /*
 
-    * Magnitude do vetor
-      */
-    result.magnitude =
-        hypotf(alpha, beta);
+  * Magnitude do vetor
+    */
+  result.magnitude =
+      hypotf(alpha, beta);
 
-    /*
+  /*
 
-    * Ângulo do vetor
-      */
-    result.angle =
-        atan2f(beta, alpha);
+  * Ângulo do vetor
+    */
+  result.angle =
+      atan2f(beta, alpha);
 
-    /*
+  /*
 
-    * Normalização do ângulo
-      */
-    if (result.angle < 0.0f)
-    {
-        result.angle += SVPWM_TWO_PI;
-    }
+  * Normalização do ângulo
+    */
+  if (result.angle < 0.0f)
+  {
+    result.angle += SVPWM_TWO_PI;
+  }
 
-    /*
+  /*
 
-    * Cálculo do setor
-      */
-    result.sector =
-        (int)(result.angle / (M_PI / 3.0f)) + 1;
+  * Cálculo do setor
+    */
+  result.sector =
+      (int)(result.angle / (M_PI / 3.0f)) + 1;
 
-    /*
+  /*
 
-    * Limitação do setor
-      */
-    if (result.sector > 6)
-    {
-        result.sector = 6;
-    }
+  * Limitação do setor
+    */
+  if (result.sector > 6)
+  {
+    result.sector = 6;
+  }
 
-    return result;
+  return result;
 }
 
 /**
@@ -460,14 +457,14 @@ static inline float svpwm_carrier(
     const svpwm_t *svpwm,
     float t)
 {
-    float phase = fmodf(t, svpwm->Ts) / svpwm->Ts;
+  float phase = fmodf(t, svpwm->Ts) / svpwm->Ts;
 
-    if (phase < 0.0f)
-    {
-        phase += 1.0f;
-    }
+  if (phase < 0.0f)
+  {
+    phase += 1.0f;
+  }
 
-    return (phase < 0.5f) ? (2.0f * phase) : (2.0f - 2.0f * phase);
+  return (phase < 0.5f) ? (2.0f * phase) : (2.0f - 2.0f * phase);
 }
 
 /**
@@ -490,7 +487,7 @@ static inline int svpwm_gate_state(
     float duty,
     float carrier)
 {
-    return (duty > carrier) ? 1 : 0;
+  return (duty > carrier) ? 1 : 0;
 }
 
 #endif /* SVPWM_H */
