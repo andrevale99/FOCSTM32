@@ -29,7 +29,7 @@ PwmSamples = 200       # passos finos de simulacao por periodo Ts
 
 # --- Parametros de tempo da simulacao ---
 Ti = 0.0               # s - tempo inicial
-Tf = 0.15              # s - tempo final
+Tf = 0.2              # s - tempo final
 Dt = 1e-6              # s - passo de integracao explicito
                        # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
                        #  informe um valor > 0 para sobrescrever o
@@ -39,15 +39,15 @@ Dt = 1e-6              # s - passo de integracao explicito
 Vdc = 12              # V - tensao do barramento CC
 
 # --- Controladores PI ---
-KpOmega = 3.0            # ganho proporcional - malha de velocidade
+KpOmega = 2.0            # ganho proporcional - malha de velocidade
 KiOmega = 0.5            # ganho integral      - malha de velocidade
-KpId    = 6.0            # ganho proporcional - malha de corrente id
+KpId    = 5.0            # ganho proporcional - malha de corrente id
 KiId    = 1.0            # ganho integral      - malha de corrente id
-KpIq    = 6.0            # ganho proporcional - malha de corrente iq
+KpIq    = 5.0            # ganho proporcional - malha de corrente iq
 KiIq    = 1.0            # ganho integral      - malha de corrente iq
 
 # --- Referencia de velocidade ---
-rpm = 50               # RPM (mecanico) - velocidade desejada
+rpm = 100               # RPM (mecanico) - velocidade desejada
 
 # --- Partida V/F em malha aberta ---
 # 1 (ou true/yes/on)  -> parte com rampa V/F em malha aberta (theta_e
@@ -59,6 +59,5 @@ rpm = 50               # RPM (mecanico) - velocidade desejada
 #                        Ti, igual ao fluxo anterior a implementacao
 #                        do V/F.
 VfStartup = 0
-
 # --- Saida ---
 file = closedloop_simulation.csv

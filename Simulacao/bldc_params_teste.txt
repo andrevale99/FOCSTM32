@@ -8,15 +8,15 @@
 # ==========================================================
 
 # --- Parametros do motor ---
-R  = 0.2           # Ohm  - resistencia de armadura
-L  = 8.5e-3         # H    - indutancia de magnetizacao
+R  = 0.3263           # Ohm  - resistencia de armadura
+L  = 1.362e-6         # H    - indutancia de magnetizacao
 M  = 0.56            # H    - indutancia mutua
-Ke = 1     # V/(rad/s) - constante eletrica
-J  = 1.0e-4         # kg.m^2 - momento de inercia
-B  = 1.0e-6         # coeficiente de amortecimento
+Ke = 0.633     # V/(rad/s) - constante eletrica
+J  = 6.5e-3         # kg.m^2 - momento de inercia
+B  = 2.1e-5         # coeficiente de amortecimento
 Tl = 0.0            # N.m  - torque de carga
-P  = 4             # numero de pares de polos
-Kt = 1     # N.m/A - constante de torque
+P  = 8             # numero de pares de polos
+Kt = 0.633     # N.m/A - constante de torque
 
 # --- Parametros do SVPWM (chaveamento real do inversor) ---
 Fsw        = 10000   # Hz - frequencia de chaveamento
@@ -25,25 +25,36 @@ PwmSamples = 200    # passos finos de simulacao por periodo Ts
 
 # --- Parametros de tempo da simulacao ---
 Ti = 0.0                 # s - tempo inicial
-Tf = 0.5                 # s - tempo final
+Tf = 0.1                 # s - tempo final
 Dt = 1e-6                # s - passo de integracao explicito
                          # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
                          #  informe um valor > 0 para sobrescrever o
                          #  calculo automatico)
 
 # --- Barramento CC ---
-Vdc = 400.0               # V - tensao do barramento CC
+Vdc = 24.0               # V - tensao do barramento CC
 
 # --- Controladores PI ---
-KpOmega = 1.0             # ganho proporcional - malha de velocidade
-KiOmega = 0.5            # ganho integral - malha de velocidade
-KpId    = 1.0             # ganho proporcional - malha de corrente id
-KiId    = 0.1             # ganho integral - malha de corrente id
-KpIq    = 1.0             # ganho proporcional - malha de corrente iq
-KiIq    = 0.1             # ganho integral - malha de corrente iq
+KpOmega = 20.0            # ganho proporcional - malha de velocidade
+KiOmega = 8.5            # ganho integral      - malha de velocidade
+KpId    = 50.0            # ganho proporcional - malha de corrente id
+KiId    = 10.0            # ganho integral      - malha de corrente id
+KpIq    = 50.0            # ganho proporcional - malha de corrente iq
+KiIq    = 10.0            # ganho integral      - malha de corrente iq
 
 # --- Referencia de velocidade ---
-rpm=68
+rpm=100
+
+# --- Partida V/F em malha aberta ---
+# 1 (ou true/yes/on)  -> parte com rampa V/F em malha aberta (theta_e
+#                        sintetico, iniciando em 0 rad) e depois comuta
+#                        para FOC em malha fechada. E o comportamento
+#                        default caso esta chave nem seja informada.
+# 0 (ou false/no/off) -> pula a partida V/F: roda o FOC em malha
+#                        fechada (theta_e = motor.theta_r * P) desde
+#                        Ti, igual ao fluxo anterior a implementacao
+#                        do V/F.
+VfStartup = 0
 
 # --- Saida ---
 file = closedloop_simulation.csv
