@@ -87,10 +87,22 @@
  * suficiente para um futuro observador de fluxo (ou o proprio sensor)
  * assumir o controle. Ajuste estas constantes conforme o motor. */
 #define VF_STARTUP_V_BOOST 1.0f          /* V   - tensao de fase em omega_e=0   */
-#define VF_STARTUP_V_PER_RAD_S 0.008f    /* V/(rad/s eletrico) - ganho V/F      */
-#define VF_STARTUP_RAMP_RATE 4000.0f     /* rad/s^2 eletrico - aceleracao da rampa */
-#define VF_STARTUP_OMEGA_E_TARGET 400.0f /* rad/s eletrico - alvo da rampa      */
-#define VF_STARTUP_DURATION 0.03f        /* s - duracao da fase em malha aberta */
+#define VF_STARTUP_V_PER_RAD_S 0.005f    /* V/(rad/s eletrico) - ganho V/F (a "razao" V/F,
+                                           * independente do tempo de rampa) */
+
+/* Tempo desejado para a rampa ir de 0 ate o alvo. O alvo (em rad/s
+ * eletrico) NAO e mais uma constante fixa: e calculado em main(), em
+ * tempo de execucao, a partir de "rpm" do arquivo de parametros
+ * (omega_e_target = P * omega_ref) -- assim a partida V/F sempre
+ * mira a mesma velocidade configurada pelo usuario. Para deixar a
+ * partida mais lenta/suave, aumente este valor: V_BOOST e
+ * V_PER_RAD_S (a razao V/F) nao mudam, pois dependem so de omega_e,
+ * nao do tempo. */
+#define VF_STARTUP_RAMP_TIME 0.2f /* s */
+
+/* s - a fase V/F dura exatamente o tempo da rampa (nunca corta antes
+ * nem se estende desnecessariamente depois de atingir o alvo) */
+#define VF_STARTUP_DURATION VF_STARTUP_RAMP_TIME
 
 /* Flag que liga/desliga a partida V/F em malha aberta. Se desativada,
  * a simulacao roda com o mesmo fluxo de antes da implementacao do
@@ -216,7 +228,6 @@ static void usage(const char *prog)
             "  KiId=2.0\n"
             "  KpIq=6.0\n"
             "  KiIq=2.0\n"
-            "  rpm=1.0\n"
             "  VfStartup=1\n"
             "  file=saida.csv\n"
             "(linhas em branco ou iniciadas com '#' sao ignoradas)\n\n"
@@ -758,18 +769,41 @@ int main(int argc, char **argv)
     double dtIq = 5e-4;
 
     /* --------------------------------------------------------------
+     *   REFERENCIAS
+     * -------------------------------------------------------------- */
+    double id_ref = 0.0; /* motor de imas permanentes: referencia de eixo d = 0 */
+
+    float rpm_ref = (float)args.rpm;
+    float omega_ref = rpm_to_rads(rpm_ref);
+    printf("omega_ref = %.6f rad/s\n", omega_ref);
+
+    /* --------------------------------------------------------------
      *   PARTIDA V/F EM MALHA ABERTA
      * -------------------------------------------------------------- */
-    /* V_max respeita a regiao linear do SVPWM com injecao de terceiro
+    /* O alvo da rampa V/F (em rad/s eletrico) e derivado diretamente
+     * da referencia de velocidade informada pelo usuario (omega_ref,
+     * em rad/s mecanico), multiplicada pelo numero de pares de polos:
+     * omega_e = P * omega_r. Assim a partida V/F sempre mira a MESMA
+     * velocidade que o FOC vai manter depois, sem precisar editar
+     * nenhuma constante quando o "rpm" do arquivo de parametros muda.
+     *
+     * V_max respeita a regiao linear do SVPWM com injecao de terceiro
      * harmonico (Vdc/sqrt(3)); aqui usa-se uma margem um pouco maior
      * (Vdc/1.8) para nao encostar no limite durante a rampa. */
+    float vf_omega_e_target = omega_ref * (float)motor.P;
+    float vf_ramp_rate = vf_omega_e_target / VF_STARTUP_RAMP_TIME;
+
+    printf("Partida V/F: alvo = %.6f rad/s eletrico (%.6f rad/s mecanico, "
+           "= omega_ref), rampa em %.3f s\n",
+           vf_omega_e_target, omega_ref, VF_STARTUP_RAMP_TIME);
+
     vf_startup_t vf;
     vf_startup_init(&vf,
                      VF_STARTUP_V_BOOST,
                      VF_STARTUP_V_PER_RAD_S,
                      (float)args.Vdc / 1.8f,
-                     VF_STARTUP_RAMP_RATE,
-                     VF_STARTUP_OMEGA_E_TARGET);
+                     vf_ramp_rate,
+                     vf_omega_e_target);
 
     PIController pi_omega, pi_d, pi_q;
 
@@ -781,15 +815,6 @@ int main(int argc, char **argv)
 
     pi_controller_init(&pi_q, args.KpIq, args.KiIq, dtIq,
                        true, vdc_min, true, vdc_max);
-
-    /* --------------------------------------------------------------
-     *   REFERENCIAS
-     * -------------------------------------------------------------- */
-    double id_ref = 0.0; /* motor de imas permanentes: referencia de eixo d = 0 */
-
-    float rpm_ref = (float)args.rpm;
-    float omega_ref = rpm_to_rads(rpm_ref);
-    printf("omega_ref = %.6f rad/s\n", omega_ref);
 
     /* --------------------------------------------------------------
      *   ARQUIVO DE LOG
