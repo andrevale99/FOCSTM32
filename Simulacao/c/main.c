@@ -37,6 +37,7 @@
 #include "inverter.h"
 #include "transforms.h"
 #include "bldc.h"
+#include "vf_startup.h"
 
 /* ========================================================================
  *   PARAMETROS DA REDE / BARRAMENTO CC
@@ -73,8 +74,30 @@
  * calculados em tempo de execucao em main() a partir de args.Vdc,
  * ja que Vdc agora e configuravel via CLI/arquivo de config. */
 
-#define PI_IQ_MAX 8
+#define PI_IQ_MAX 5.0
 #define PI_IQ_MIN (-PI_IQ_MAX)
+
+/* ========================================================================
+ *   PARTIDA V/F EM MALHA ABERTA (vf_startup.h)
+ * ==================================================================== */
+/* Fase inicial em malha aberta, sem realimentacao de posicao: o angulo
+ * eletrico usado para sintetizar o vetor de tensao comeca em 0 rad e
+ * evolui apenas integrando uma rampa de frequencia comandada. Serve
+ * para tirar o motor do repouso ate uma velocidade em que a FCEM seja
+ * suficiente para um futuro observador de fluxo (ou o proprio sensor)
+ * assumir o controle. Ajuste estas constantes conforme o motor. */
+#define VF_STARTUP_V_BOOST 1.0f          /* V   - tensao de fase em omega_e=0   */
+#define VF_STARTUP_V_PER_RAD_S 0.008f    /* V/(rad/s eletrico) - ganho V/F      */
+#define VF_STARTUP_RAMP_RATE 4000.0f     /* rad/s^2 eletrico - aceleracao da rampa */
+#define VF_STARTUP_OMEGA_E_TARGET 400.0f /* rad/s eletrico - alvo da rampa      */
+#define VF_STARTUP_DURATION 0.03f        /* s - duracao da fase em malha aberta */
+
+/* Flag que liga/desliga a partida V/F em malha aberta. Se desativada,
+ * a simulacao roda com o mesmo fluxo de antes da implementacao do
+ * V/F: FOC em malha fechada desde t = Ti, com theta_e vindo direto
+ * do modelo do motor. Configuravel via arquivo (VfStartup=0/1) ou
+ * CLI (--vf-startup <0|1>). */
+#define DEFAULT_USE_VF_STARTUP 1
 
 /* ========================================================================
  *   GANHOS PADRAO DOS CONTROLADORES PI
@@ -125,6 +148,7 @@ typedef struct
     double KpIq;    /* ganho proporcional - malha de corrente iq         */
     double KiIq;    /* ganho integral - malha de corrente iq             */
     double rpm;     /*referencia de velocidade*/
+    int UseVfStartup; /* 1 = realiza partida V/F em malha aberta antes do FOC; 0 = FOC direto desde Ti */
 } sim_args_t;
 
 /* Identificadores para opcoes de linha de comando que so existem na
@@ -138,8 +162,29 @@ enum
     OPT_KP_ID,
     OPT_KI_ID,
     OPT_KP_IQ,
-    OPT_KI_IQ
+    OPT_KI_IQ,
+    OPT_VF_STARTUP
 };
+
+/* Interpreta strings booleanas aceitas em CLI/arquivo de config para
+ * a flag de partida V/F: "1"/"0", "true"/"false", "yes"/"no",
+ * "on"/"off" (case-insensitive). Qualquer outra coisa cai no atoi(). */
+static int parse_bool(const char *v)
+{
+    if (strcasecmp(v, "true") == 0 || strcasecmp(v, "yes") == 0 ||
+        strcasecmp(v, "on") == 0)
+    {
+        return 1;
+    }
+
+    if (strcasecmp(v, "false") == 0 || strcasecmp(v, "no") == 0 ||
+        strcasecmp(v, "off") == 0)
+    {
+        return 0;
+    }
+
+    return atoi(v) != 0;
+}
 
 static void usage(const char *prog)
 {
@@ -171,6 +216,8 @@ static void usage(const char *prog)
             "  KiId=2.0\n"
             "  KpIq=6.0\n"
             "  KiIq=2.0\n"
+            "  rpm=1.0\n"
+            "  VfStartup=1\n"
             "  file=saida.csv\n"
             "(linhas em branco ou iniciadas com '#' sao ignoradas)\n\n"
             "Opcoes:\n"
@@ -200,6 +247,8 @@ static void usage(const char *prog)
             "      --kp-iq <v>     Ganho proporcional - malha de corrente iq (default: %.6f)\n"
             "      --ki-iq <v>     Ganho integral - malha de corrente iq     (default: %.6f)\n"
             "      --rpm               Referencia de velocidade em RPM       (default: %.2f)\n"
+            "      --vf-startup <0|1> Realiza partida V/F em malha aberta antes do FOC\n"
+            "                       (aceita 0/1, true/false, yes/no)         (default: %d)\n"
             "  -h, --help          Mostra esta mensagem de ajuda\n\n"
             "Observacao: a simulacao reproduz o chaveamento REAL do inversor\n"
             "(comparacao do duty cycle com uma portadora triangular), nao um\n"
@@ -232,7 +281,8 @@ static void usage(const char *prog)
             (double)DEFAULT_KI_ID,
             (double)DEFAULT_KP_IQ,
             (double)DEFAULT_KI_IQ,
-            (double)DEFAULT_RPM_REFERENCE);
+            (double)DEFAULT_RPM_REFERENCE,
+            DEFAULT_USE_VF_STARTUP);
 }
 
 /* --------------------------------------------------------------------
@@ -337,6 +387,8 @@ static int parse_config_file(const char *path, sim_args_t *args)
             args->KiIq = atof(v);
         else if (strcasecmp(key, "rpm") == 0)
             args->rpm = atof(v);
+        else if (strcasecmp(key, "VfStartup") == 0)
+            args->UseVfStartup = parse_bool(v);
         else if (strcasecmp(key, "file") == 0 || strcasecmp(key, "filename") == 0)
         {
             strncpy(args->filename, v, sizeof(args->filename) - 1);
@@ -381,6 +433,7 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
     args->KiId = (double)DEFAULT_KI_ID;
     args->KpIq = (double)DEFAULT_KP_IQ;
     args->KiIq = (double)DEFAULT_KI_IQ;
+    args->UseVfStartup = DEFAULT_USE_VF_STARTUP;
 
     static struct option long_options[] =
         {
@@ -407,6 +460,7 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
             {"ki-id", required_argument, 0, OPT_KI_ID},
             {"kp-iq", required_argument, 0, OPT_KP_IQ},
             {"ki-iq", required_argument, 0, OPT_KI_IQ},
+            {"vf-startup", required_argument, 0, OPT_VF_STARTUP},
             {"help", no_argument, 0, 'h'},
             {0, 0, 0, 0}};
     const char *optstring = "c:f:R:L:M:K:J:B:T:P:t:s:n:i:e:d:h";
@@ -528,6 +582,9 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
         case OPT_KI_IQ:
             args->KiIq = atof(optarg);
             break;
+        case OPT_VF_STARTUP:
+            args->UseVfStartup = parse_bool(optarg);
+            break;
         case 'h':
             usage(argv[0]);
             exit(EXIT_SUCCESS);
@@ -568,8 +625,10 @@ int main(int argc, char **argv)
            args.KpOmega, args.KiOmega);
     printf("  Controlador de corrente id: Kp = %.6f | Ki = %.6f\n",
            args.KpId, args.KiId);
-    printf("  Controlador de corrente iq: Kp = %.6f | Ki = %.6f\n\n",
+    printf("  Controlador de corrente iq: Kp = %.6f | Ki = %.6f\n",
            args.KpIq, args.KiIq);
+    printf("  Partida V/F em malha aberta: %s\n\n",
+           args.UseVfStartup ? "SIM" : "NAO (FOC direto desde Ti)");
 
     if (args.Fsw <= 0.0)
     {
@@ -698,6 +757,20 @@ int main(int argc, char **argv)
     double dtId = 5e-4;
     double dtIq = 5e-4;
 
+    /* --------------------------------------------------------------
+     *   PARTIDA V/F EM MALHA ABERTA
+     * -------------------------------------------------------------- */
+    /* V_max respeita a regiao linear do SVPWM com injecao de terceiro
+     * harmonico (Vdc/sqrt(3)); aqui usa-se uma margem um pouco maior
+     * (Vdc/1.8) para nao encostar no limite durante a rampa. */
+    vf_startup_t vf;
+    vf_startup_init(&vf,
+                     VF_STARTUP_V_BOOST,
+                     VF_STARTUP_V_PER_RAD_S,
+                     (float)args.Vdc / 1.8f,
+                     VF_STARTUP_RAMP_RATE,
+                     VF_STARTUP_OMEGA_E_TARGET);
+
     PIController pi_omega, pi_d, pi_q;
 
     pi_controller_init(&pi_omega, args.KpOmega, args.KiOmega, dtOmega,
@@ -731,8 +804,9 @@ int main(int argc, char **argv)
     }
 
     fprintf(log_file,
-            "time;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;omega_r;iq_ref;"
+            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;omega_r;iq_ref;"
             "duty_a;duty_b;duty_c;carrier;gate_a;gate_b;gate_c\n");
+    /* mode: 0 = partida V/F em malha aberta | 1 = FOC em malha fechada */
 
     /* --------------------------------------------------------------
      *   LACO DE SIMULACAO
@@ -745,29 +819,54 @@ int main(int argc, char **argv)
             break;
         }
 
-        /* A. Medicao (feedback do modelo) */
-        float theta_e = motor.theta_r * (float)motor.P;
+        /* Variaveis compartilhadas pelas duas fases (preenchidas de
+         * um jeito ou de outro abaixo, e usadas no log ao final) */
+        float v_alpha, v_beta, theta_e;
+        float i_d = 0.0f, i_q = 0.0f;
+        double iq_ref = 0.0;
+        int mode;
 
-        /* B. Malha externa de velocidade -> referencia de iq */
-        double iq_ref = pi_controller_update(&pi_omega, omega_ref, motor.omega_r);
+        if (args.UseVfStartup && t < VF_STARTUP_DURATION)
+        {
+            /* ----------------------------------------------------------
+             *   FASE 1: PARTIDA V/F EM MALHA ABERTA
+             * ----------------------------------------------------------
+             * theta_e eh sintetico (comeca em 0 rad / 0 graus) e nao vem
+             * do modelo do motor: nao ha realimentacao de posicao nem
+             * de corrente nesta fase. O vetor de tensao alpha-beta e
+             * sintetizado diretamente por vf_startup_step(). */
+            mode = 0;
+            vf_startup_step(&vf, dt, &theta_e, &v_alpha, &v_beta);
+        }
+        else
+        {
+            /* ----------------------------------------------------------
+             *   FASE 2: FOC EM MALHA FECHADA (controle vetorial)
+             * ---------------------------------------------------------- */
+            mode = 1;
 
-        /* C. Transformada de Clarke (abc -> alpha-beta) */
-        float i_alpha, i_beta;
-        clarke_transform(motor.iabc[0], motor.iabc[1], motor.iabc[2],
-                         &i_alpha, &i_beta);
+            /* A. Medicao (feedback do modelo) */
+            theta_e = motor.theta_r * (float)motor.P;
 
-        /* Transformada de Park (alpha-beta -> dq) */
-        float i_d, i_q;
-        park_transform(i_alpha, i_beta, theta_e, &i_d, &i_q);
+            /* B. Malha externa de velocidade -> referencia de iq */
+            iq_ref = pi_controller_update(&pi_omega, omega_ref, motor.omega_r);
 
-        /* D. Malhas internas de corrente (PI em d e em q) */
-        double vd_ref = pi_controller_update(&pi_d, id_ref, i_d);
-        double vq_ref = pi_controller_update(&pi_q, iq_ref, i_q);
+            /* C. Transformada de Clarke (abc -> alpha-beta) */
+            float i_alpha, i_beta;
+            clarke_transform(motor.iabc[0], motor.iabc[1], motor.iabc[2],
+                             &i_alpha, &i_beta);
 
-        /* E. Transformada inversa de Park (dq -> alpha-beta) */
-        float v_alpha, v_beta;
-        park_inverse_transform((float)vd_ref, (float)vq_ref, theta_e,
-                               &v_alpha, &v_beta);
+            /* Transformada de Park (alpha-beta -> dq) */
+            park_transform(i_alpha, i_beta, theta_e, &i_d, &i_q);
+
+            /* D. Malhas internas de corrente (PI em d e em q) */
+            double vd_ref = pi_controller_update(&pi_d, id_ref, i_d);
+            double vq_ref = pi_controller_update(&pi_q, iq_ref, i_q);
+
+            /* E. Transformada inversa de Park (dq -> alpha-beta) */
+            park_inverse_transform((float)vd_ref, (float)vq_ref, theta_e,
+                                   &v_alpha, &v_beta);
+        }
 
         /* F. SVPWM: duty cycles de referencia (sinal modulante) */
         float duty_a, duty_b, duty_c;
@@ -789,13 +888,13 @@ int main(int argc, char **argv)
                                 (float)gate_c, Vabc);
 
         /* I. Atualizacao da planta (motor BLDC) */
-        bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, true);
+        bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
 
         /* J. Log dos dados */
         fprintf(log_file,
-                "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
+                "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
                 "%.6f;%.6f;%.6f;%.6f;%d;%d;%d\n",
-                t,
+                t, mode,
                 Vabc[0], Vabc[1], Vabc[2],
                 motor.iabc[0], motor.iabc[1], motor.iabc[2],
                 i_d, i_q,

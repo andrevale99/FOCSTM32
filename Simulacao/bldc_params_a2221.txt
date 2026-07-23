@@ -1,49 +1,64 @@
 # ==========================================================
 #   Arquivo de parametros da simulacao closedloop
-#   Uso: ./closedloop -c params.txt
+#   Uso: ./closedloop -c params_exemplo.txt
 #
 #   Formato: CHAVE=VALOR (tambem aceita "CHAVE VALOR")
 #   Linhas em branco ou iniciadas com '#' sao ignoradas.
 #   Prioridade: argumentos de linha de comando > este arquivo > default
+#
+#   Qualquer chave tambem pode ser sobrescrita direto na linha de
+#   comando, por exemplo:
+#     ./closedloop -c params_exemplo.txt --vf-startup 0 --rpm 800
 # ==========================================================
 
 # --- Parametros do motor ---
-R  = 0.5           # Ohm  - resistencia de armadura
-L  = 0.3e-3         # H    - indutancia de magnetizacao
-M  = 0.0            # H    - indutancia mutua
-Ke = 0.00909483     # V/(rad/s) - constante eletrica
-J  = 1.0e-4         # kg.m^2 - momento de inercia
-B  = 1.0e-6         # coeficiente de amortecimento
-Tl = 0.0            # N.m  - torque de carga
-P  = 14             # numero de pares de polos
-Kt = 0.00909483     # N.m/A - constante de torque
+R  = 0.5             # Ohm       - resistencia de armadura
+L  = 0.3e-3           # H         - indutancia de magnetizacao
+M  = 0.0              # H         - indutancia mutua (nao usada em bldc_step)
+Ke = 0.00909483       # V/(rad/s) - constante eletrica (FCEM)
+J  = 1.0e-4           # kg.m^2    - momento de inercia do rotor
+B  = 1.0e-6           # N.m/(rad/s) - coeficiente de atrito viscoso
+Tl = 0.0              # N.m       - torque de carga aplicado ao eixo
+P  = 14               # -         - numero de pares de polos
+Kt = 0.00909483       # N.m/A     - constante de torque
 
 # --- Parametros do SVPWM (chaveamento real do inversor) ---
-Fsw        = 10000   # Hz - frequencia de chaveamento
-PwmSamples = 200    # passos finos de simulacao por periodo Ts
-                    # (maior = mais fiel ao chaveamento real, porem mais lento)
+Fsw        = 10000     # Hz - frequencia de chaveamento
+PwmSamples = 200       # passos finos de simulacao por periodo Ts
+                       # (maior = mais fiel ao chaveamento real, porem mais lento)
 
 # --- Parametros de tempo da simulacao ---
-Ti = 0.0                 # s - tempo inicial
-Tf = 0.5                 # s - tempo final
-Dt = 1e-5                # s - passo de integracao explicito
-                         # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
-                         #  informe um valor > 0 para sobrescrever o
-                         #  calculo automatico)
+Ti = 0.0               # s - tempo inicial
+Tf = 0.15              # s - tempo final
+Dt = 1e-6              # s - passo de integracao explicito
+                       # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
+                       #  informe um valor > 0 para sobrescrever o
+                       #  calculo automatico)
 
 # --- Barramento CC ---
-Vdc = 11.2               # V - tensao do barramento CC
+Vdc = 12              # V - tensao do barramento CC
 
 # --- Controladores PI ---
-KpOmega = 3.0             # ganho proporcional - malha de velocidade
-KiOmega = 0.5            # ganho integral - malha de velocidade
-KpId    = 3.5             # ganho proporcional - malha de corrente id
-KiId    = 0.8             # ganho integral - malha de corrente id
-KpIq    = 3.5             # ganho proporcional - malha de corrente iq
-KiIq    = 0.8             # ganho integral - malha de corrente iq
+KpOmega = 3.0            # ganho proporcional - malha de velocidade
+KiOmega = 0.5            # ganho integral      - malha de velocidade
+KpId    = 6.0            # ganho proporcional - malha de corrente id
+KiId    = 1.0            # ganho integral      - malha de corrente id
+KpIq    = 6.0            # ganho proporcional - malha de corrente iq
+KiIq    = 1.0            # ganho integral      - malha de corrente iq
 
 # --- Referencia de velocidade ---
-rpm=250
+rpm = 50               # RPM (mecanico) - velocidade desejada
+
+# --- Partida V/F em malha aberta ---
+# 1 (ou true/yes/on)  -> parte com rampa V/F em malha aberta (theta_e
+#                        sintetico, iniciando em 0 rad) e depois comuta
+#                        para FOC em malha fechada. E o comportamento
+#                        default caso esta chave nem seja informada.
+# 0 (ou false/no/off) -> pula a partida V/F: roda o FOC em malha
+#                        fechada (theta_e = motor.theta_r * P) desde
+#                        Ti, igual ao fluxo anterior a implementacao
+#                        do V/F.
+VfStartup = 0
 
 # --- Saida ---
 file = closedloop_simulation.csv
