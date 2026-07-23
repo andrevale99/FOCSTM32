@@ -32,6 +32,34 @@ static inline void clarke_transform(
 }
 
 /**
+ * @brief Transformada inversa de Clarke (alpha-beta -> abc).
+ *
+ * Assume-se que o sistema trifasico e equilibrado:
+ *
+ * ia + ib + ic = 0
+ *
+ * As equacoes utilizadas sao:
+ *
+ * ia = ialpha
+ *
+ * ib = -0.5 * ialpha + (sqrt(3)/2) * ibeta
+ *
+ * ic = -0.5 * ialpha - (sqrt(3)/2) * ibeta
+ */
+static inline void clarke_inverse_transform(
+    float ialpha, float ibeta,
+    float *ia, float *ib, float *ic)
+{
+    *ia = ialpha;
+
+    *ib = -0.5f * ialpha +
+          TRANSFORMS_SQRT3_OVER_2 * ibeta;
+
+    *ic = -0.5f * ialpha -
+          TRANSFORMS_SQRT3_OVER_2 * ibeta;
+}
+
+/**
  * @brief Transformada de Park (alpha-beta -> dq).
  *
  * id =  ialpha*cos(theta) + ibeta*sin(theta)
