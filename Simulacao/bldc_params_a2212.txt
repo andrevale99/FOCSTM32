@@ -59,5 +59,16 @@ rpm = 100               # RPM (mecanico) - velocidade desejada
 #                        Ti, igual ao fluxo anterior a implementacao
 #                        do V/F.
 VfStartup = 0
+
+# -- Partida em malha aberta --
+# Sera gerado ondas de alimentação ideias senoidais
+# que alimentara o motor.
+# A logica de acionamento do parametro é a mesma do
+# parametro "VfStartup".
+# Somente uma das flags deve estar ativada: ou A MalhaAberta
+# ou a VfStartup, as duas com valor True/1/on nao pode.
+#
+MalhaAberta = 0
+
 # --- Saida ---
 file = closedloop_simulation.csv
