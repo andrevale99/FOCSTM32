@@ -549,6 +549,11 @@ int main(int argc, char **argv)
         }
         else
         {
+            fprintf(stderr, "\nErro: Malha aberta em desenvolvimento\n"
+                            "Os arquivos de imagem serao gerados, mas nao havera nada\n\n");
+
+            break;
+
             theta_e = motor.theta_r * (float)motor.P;
 
             Vabc[0] = vdc_max * sinf(theta_e + PHI_A);
