@@ -12,7 +12,7 @@ from SVPWM import SVPWM
 # =========================================
 
 # Amplitude da rede
-Vdc = np.float32(12.0)  # V
+Vdc = np.float32(24.0)  # V
 
 
 # =========================================
@@ -20,29 +20,29 @@ Vdc = np.float32(12.0)  # V
 # =========================================
 
 # Resistencia de armadura
-Rs = np.float32(1.5)  # Ohm
+Rs = np.float32(0.161)  # Ohm
 
 # Indutancia de magnetizacao
-L = np.float32(50e-3)  # H
+L = np.float32(0.052e-3)  # H
 
 # Constantes eletricas e mecanicas
-Ke = np.float32(0.850)
+Ke = np.float32(0.0255)
 Kt = np.float32(Ke)
 
 # Torque da carga
 Tl = np.float32(0.0)
 
 # Coeficiente de amortecimento
-B = np.float32(1e-3)
+B = np.float32(1.2e-6)
 
 # Momento de inercia
-J = np.float32(0.0036013854)
+J = np.float32(43.3e-3)
 
 # Quantidade de polos no motor
 POLOS = np.int32(8)
 
 # Quantidade de pares de polos
-PARES_DE_POLOS = np.float32(POLOS // 2)
+PARES_DE_POLOS = np.float32(POLOS / 2)
 
 
 # =========================================
@@ -52,7 +52,7 @@ PARES_DE_POLOS = np.float32(POLOS // 2)
 VDC_MAX = np.float32(Vdc)
 VDC_MIN = np.float32(-Vdc)
 
-PI_IQ_MAX = np.float32(5.0)
+PI_IQ_MAX = np.float32(8.0)
 PI_IQ_MIN = np.float32(-PI_IQ_MAX)
 
 
@@ -61,7 +61,7 @@ PI_IQ_MIN = np.float32(-PI_IQ_MAX)
 # =========================================
 
 ti = np.float32(0.0)  # s
-tf = np.float32(1.0)  # s
+tf = np.float32(0.2)  # s
 dt = np.float32(1e-5)  # s
 
 time = np.arange(ti, tf, dt, dtype=np.float32)
