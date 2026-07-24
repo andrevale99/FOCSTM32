@@ -54,7 +54,7 @@ rpm=100
 #                        fechada (theta_e = motor.theta_r * P) desde
 #                        Ti, igual ao fluxo anterior a implementacao
 #                        do V/F.
-VfStartup = 1
+VfStartup = 0
 
 # -- Partida em malha aberta --
 # Sera gerado ondas de alimentação ideias senoidais
@@ -64,7 +64,7 @@ VfStartup = 1
 # Somente uma das flags deve estar ativada: ou A MalhaAberta
 # ou a VfStartup, as duas com valor True/1/on nao pode.
 #
-MalhaAberta = 1
+MalhaAberta = 0
 
 
 # --- Saida ---

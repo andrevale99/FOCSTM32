@@ -32,6 +32,7 @@ Dt = 1e-6                # s - passo de integracao explicito
                          #  calculo automatico)
 
 # --- Barramento CC ---
+# vdc d 36 V a 44 V
 Vdc = 36.0               # V - tensao do barramento CC
 
 # --- Controladores PI ---
@@ -43,7 +44,7 @@ KpIq    = 3.0            # ganho proporcional - malha de corrente iq
 KiIq    = 0.8            # ganho integral      - malha de corrente iq
 
 # --- Referencia de velocidade ---
-rpm=10
+rpm=200
 
 # --- Partida V/F em malha aberta ---
 # 1 (ou true/yes/on)  -> parte com rampa V/F em malha aberta (theta_e
