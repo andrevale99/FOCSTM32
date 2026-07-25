@@ -102,7 +102,7 @@ integração (`dt`) da simulação.
 | Campo | Unidade | Descrição |
 |---|---|---|
 | `time` | s | Instante de tempo da simulação |
-| `mode` | — | Fase de operação: `0` = partida V/F em malha aberta, `1` = FOC em malha fechada |
+| `mode` | — | Fase de operação: `0` = partida V/F em malha aberta, `1` =  malha fechada (SOMENTE CONTROLADOR PI de Corrente- Id e Iq - e Velocidade) |
 | `Va`, `Vb`, `Vc` | V | Tensões de fase aplicadas ao motor (saída real do inversor, já chaveada) |
 | `ia`, `ib`, `ic` | A | Correntes de fase do motor (abc) |
 | `id`, `iq` | A | Correntes no referencial síncrono dq (Park). `id` idealmente ≈ 0; `iq` é proporcional ao torque |
