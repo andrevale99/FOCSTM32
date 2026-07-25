@@ -1,6 +1,7 @@
 GCC = gcc
 MAIN = c/main.c
 OUT = c/simulation.out
+OUT_IMGS = img/
 
 GCC_FLAGS = -Wall -lm
 
@@ -15,6 +16,7 @@ bldc_a2221_file_csv = 2221_simulation.csv
 
 clear:
 	rm *.csv
+	rm $(OUT_IMGS)*.pdf
 
 bldc_1_teste_closedloop:
 	$(GCC) $(MAIN) -o $(OUT) $(GCC_FLAGS)

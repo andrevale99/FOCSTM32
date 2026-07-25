@@ -855,6 +855,7 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
     args->KpIq = (double)DEFAULT_KP_IQ;
     args->KiIq = (double)DEFAULT_KI_IQ;
     args->UseVfStartup = DEFAULT_USE_VF_STARTUP;
+    args->MalhaAberta = DEFAULT_USE_MALHA_ABERTA;
 
     static struct option long_options[] =
         {
