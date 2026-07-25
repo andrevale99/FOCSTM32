@@ -359,9 +359,9 @@ void bldc_step(float Vabc[JUST_THREE_PHASES],
         fabc[2] = -sinf(motor->theta_e + PHI_C);
     }
 
-    eabc[0] = motor->Ke * motor->omega_e * fabc[0];
-    eabc[1] = motor->Ke * motor->omega_e * fabc[1];
-    eabc[2] = motor->Ke * motor->omega_e * fabc[2];
+    eabc[0] = motor->Ke * motor->omega_r * fabc[0];
+    eabc[1] = motor->Ke * motor->omega_r * fabc[1];
+    eabc[2] = motor->Ke * motor->omega_r * fabc[2];
 
     diabc[0] = (Vabc[0] - motor->R * motor->iabc[0] - eabc[0]) / motor->L;
     diabc[1] = (Vabc[1] - motor->R * motor->iabc[1] - eabc[1]) / motor->L;
