@@ -576,8 +576,8 @@ int main(int argc, char **argv)
             /* J. Log dos dados */
 #if !DEBUG
             fprintf(log_file,
-                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
-                    "%.6f;%.6f;%.6f;%.6f;%d;%d;%d\n",
+                    "%.6f;%d;%.3f;%.3f;%.3f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.3f;%.4f;%.4f;%.4f;"
+                    "%.4f;%.4f;%.4f;%.4f;%d;%d;%d\n",
                     t, mode,
                     Vabc[0], Vabc[1], Vabc[2],
                     motor.iabc[0], motor.iabc[1], motor.iabc[2],
