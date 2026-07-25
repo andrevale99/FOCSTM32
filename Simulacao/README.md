@@ -91,6 +91,48 @@ file = closedloop_simulation.csv
 
 Caso esteja utilizando ambiente **LINUX**, pode-se utilizar do [makefile](./makefile) presente no diretório, basta mudar as variáveis para o que deseja e executar a ação desejada.
 
+# Log de Saída da Simulação (CSV)
+
+O arquivo CSV gerado pela simulação (`closedloop_simulation.csv` por padrão)
+usa `;` como separador de campos. Cada linha representa um passo de
+integração (`dt`) da simulação.
+
+## Variáveis
+
+| Campo | Unidade | Descrição |
+|---|---|---|
+| `time` | s | Instante de tempo da simulação |
+| `mode` | — | Fase de operação: `0` = partida V/F em malha aberta, `1` = FOC em malha fechada |
+| `Va`, `Vb`, `Vc` | V | Tensões de fase aplicadas ao motor (saída real do inversor, já chaveada) |
+| `ia`, `ib`, `ic` | A | Correntes de fase do motor (abc) |
+| `id`, `iq` | A | Correntes no referencial síncrono dq (Park). `id` idealmente ≈ 0; `iq` é proporcional ao torque |
+| `Te` | N·m | Torque eletromagnético desenvolvido pelo motor |
+| `theta_r` | rad | Posição angular mecânica do rotor (acumulada, não normalizada) |
+| `omega_r` | rad/s | Velocidade angular mecânica do rotor |
+| `iq_ref` | A | Referência de corrente `iq` gerada pela malha de velocidade (saída do PI de velocidade) |
+| `vd_ref`, `vq_ref` | V | Tensões de referência em dq geradas pelas malhas de corrente (antes do SVPWM) |
+| `duty_a`, `duty_b`, `duty_c` | 0–1 | Duty cycles de referência de cada braço do inversor (saída do SVPWM) |
+| `carrier` | 0–1 | Valor instantâneo da portadora triangular do PWM |
+| `gate_a`, `gate_b`, `gate_c` | 0 ou 1 | Estado de chaveamento da chave superior de cada braço (1 = ligada) |
+| `sat_omega` | 0 ou 1 | *(somente build DEBUG)* Indica se o PI de velocidade está saturado no passo |
+| `sat_d` | 0 ou 1 | *(somente build DEBUG)* Indica se o PI de corrente `id` está saturado no passo |
+| `sat_q` | 0 ou 1 | *(somente build DEBUG)* Indica se o PI de corrente `iq` está saturado no passo |
+
+## Observações
+
+- `Va/Vb/Vc` e `gate_a/b/c` refletem o **chaveamento real** do inversor
+  (não a tensão média), portanto apresentam ripple de alta frequência
+  mesmo em regime permanente — isso é esperado.
+- `vd_ref`/`vq_ref` são úteis para avaliar a tensão "útil" pedida pelo
+  controle, sem o ripple do PWM.
+- Os campos `sat_omega`, `sat_d`, `sat_q` só aparecem quando o binário é
+  compilado com `-DDEBUG` (ou `DEBUG=1`); no build padrão essas três
+  colunas não são geradas.
+- Durante a fase de partida V/F (`mode = 0`), os campos `id`, `iq`,
+  `iq_ref`, `vd_ref`, `vq_ref` não refletem a malha FOC (que ainda não
+  está ativa) — `theta_e` usado nesse trecho é sintético, não vem da
+  posição real do rotor.
+
 
 # Referências utilizadas
 
