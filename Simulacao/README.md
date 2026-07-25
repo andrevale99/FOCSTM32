@@ -147,3 +147,5 @@ integração (`dt`) da simulação.
 1. S. A. Zabalawi and A. Nasiri, "State Space Modeling and Simulation of Sensorless Control of Brushless DC Motors Using Instantaneous Rotor Position Tracking," 2007 IEEE Vehicle Power and Propulsion Conference, Arlington, TX, USA, 2007, pp. 90-94, doi: 10.1109/VPPC.2007.4544104.
 keywords: {State-space methods;Sensorless control;Brushless DC motors;Rotors;DC motors;Reluctance motors;Hysteresis motors;Traction motors;Power system reliability;Mathematical model;Brushless machine;Sensorless;Simulation;State Space}
 
+2. S. Wongkhead, "State Space Model for Speed Control BLDC Motor Tuning by Combination of PI - Artificial Neural Network Controller," 2021 18th International Conference on Electrical Engineering/Electronics, Computer, Telecommunications and Information Technology (ECTI-CON), Chiang Mai, Thailand, 2021, pp. 874-877, doi: 10.1109/ECTI-CON51831.2021.9454756. keywords: {PI control;Torque;Brushless DC motors;Computational modeling;Velocity control;Artificial neural networks;Aerospace electronics;State Space Model;Speed Control BLDC Motor;PI Controller;ANN Controller},
+
