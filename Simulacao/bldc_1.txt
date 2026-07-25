@@ -11,7 +11,7 @@
 R  = 0.161           # Ohm  - resistencia de armadura
 L  = 0.052e-3         # H    - indutancia de magnetizacao
 M  = 0.0            # H    - indutancia mutua
-Ke = 0.0255     # V/(rad/s) - constante eletrica
+Ke = 0.0255     # V/(rad/s) - constante eletrica (2.67 V/krpm)
 J  = 43.3e-3         # kg.m^2 - momento de inercia
 B  = 1.2e-6         # coeficiente de amortecimento
 Tl = 0.0            # N.m  - torque de carga

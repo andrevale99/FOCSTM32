@@ -132,12 +132,18 @@
  *   PARAMETROS DA SIMULACAO
  * ==================================================================== */
 #define DEFAULT_SIM_TI 0.0f /* s */
-#define DEFAULT_SIM_TF 1.0f /* s */
+#define DEFAULT_SIM_TF 0.5f /* s */
 /* DEFAULT_SIM_DT = 0.0 significa "automatico": o passo de integracao e
  * derivado da frequencia de chaveamento do SVPWM (Ts / PwmSamples). Se
  * o usuario informar um Dt explicito (> 0), esse valor e usado
  * diretamente, sobrescrevendo o calculo automatico. Veja main(). */
 #define DEFAULT_SIM_DT 0.0f
+
+/* ========================================================================
+ *   DEBUG
+ * ==================================================================== */
+
+#define DEBUG 1
 
 /* ========================================================================
  *   ARGUMENTOS DE LINHA DE COMANDO
@@ -373,12 +379,12 @@ int main(int argc, char **argv)
      * -------------------------------------------------------------- */
     /* Os limites de saturacao das malhas de corrente (vd/vq) sao
      * +-Vdc, calculados a partir do parametro Vdc informado. */
-    double vdc_max = args.Vdc;
-    double vdc_min = -args.Vdc;
+    double vdc_max = args.Vdc / sqrt(3);
+    double vdc_min = -args.Vdc / sqrt(3);
 
     double dtOmega = 5e-3;
-    double dtId = 5e-4;
-    double dtIq = 5e-4;
+    double dtId = 100e-4;
+    double dtIq = 100e-4;
 
     /* --------------------------------------------------------------
      *   REFERENCIAS
@@ -443,9 +449,16 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+#if !DEBUG
     fprintf(log_file,
-            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;omega_r;iq_ref;"
+            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;omega_r;iq_ref;vd_ref;vq_ref;"
             "duty_a;duty_b;duty_c;carrier;gate_a;gate_b;gate_c\n");
+#else
+    fprintf(log_file,
+            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;omega_r;iq_ref;vd_ref;vq_ref;"
+            "duty_a;duty_b;duty_c;carrier;gate_a;gate_b;gate_c;sat_omega;sat_d;sat_q\n");
+#endif
+
     /* mode: 0 = partida V/F em malha aberta | 1 = FOC em malha fechada */
 
     /* --------------------------------------------------------------
@@ -465,6 +478,7 @@ int main(int argc, char **argv)
         float v_alpha, v_beta, theta_e;
         float i_d = 0.0f, i_q = 0.0f;
         double iq_ref = 0.0;
+        double vd_ref = 0.0, vq_ref = 0.0;
         int mode = 0;
 
         if (args.MalhaAberta == false)
@@ -503,8 +517,8 @@ int main(int argc, char **argv)
                 park_transform(i_alpha, i_beta, theta_e, &i_d, &i_q);
 
                 /* D. Malhas internas de corrente (PI em d e em q) */
-                double vd_ref = pi_controller_update(&pi_d, id_ref, i_d);
-                double vq_ref = pi_controller_update(&pi_q, iq_ref, i_q);
+                vd_ref = pi_controller_update(&pi_d, id_ref, i_d);
+                vq_ref = pi_controller_update(&pi_q, iq_ref, i_q);
 
                 /* E. Transformada inversa de Park (dq -> alpha-beta) */
                 park_inverse_transform((float)vd_ref, (float)vq_ref, theta_e,
@@ -533,8 +547,9 @@ int main(int argc, char **argv)
             bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
 
             /* J. Log dos dados */
+#if !DEBUG
             fprintf(log_file,
-                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
+                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
                     "%.6f;%.6f;%.6f;%.6f;%d;%d;%d\n",
                     t, mode,
                     Vabc[0], Vabc[1], Vabc[2],
@@ -542,29 +557,46 @@ int main(int argc, char **argv)
                     i_d, i_q,
                     motor.Te,
                     motor.theta_r, motor.omega_r,
-                    iq_ref,
+                    iq_ref, vd_ref, vq_ref,
                     duty_a, duty_b, duty_c,
                     carrier,
                     gate_a, gate_b, gate_c);
+#else
+            fprintf(log_file,
+                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
+                    "%.6f;%.6f;%.6f;%.6f;%d;%d;%d;%d;%d;%d\n",
+                    t, mode,
+                    Vabc[0], Vabc[1], Vabc[2],
+                    motor.iabc[0], motor.iabc[1], motor.iabc[2],
+                    i_d, i_q,
+                    motor.Te,
+                    motor.theta_r, motor.omega_r,
+                    iq_ref, vd_ref, vq_ref,
+                    duty_a, duty_b, duty_c,
+                    carrier,
+                    gate_a, gate_b, gate_c,
+                    (int)pi_omega.saturated, (int)pi_d.saturated, (int)pi_q.saturated);
+#endif
         }
         else
         {
+#if !DEBUG
             fprintf(stderr, "\nErro: Malha aberta em desenvolvimento\n"
                             "Os arquivos de imagem serao gerados, mas nao havera nada\n\n");
 
             break;
-
+#endif
             theta_e = motor.theta_r * (float)motor.P;
 
-            Vabc[0] = vdc_max * sinf(theta_e + PHI_A);
-            Vabc[1] = vdc_max * sinf(theta_e + PHI_B);
-            Vabc[2] = vdc_max * sinf(theta_e + PHI_C);
+            Vabc[0] = vdc_max/sqrt(3) * sinf(theta_e + PHI_A);
+            Vabc[1] = vdc_max/sqrt(3) * sinf(theta_e + PHI_B);
+            Vabc[2] = vdc_max/sqrt(3) * sinf(theta_e + PHI_C);
             /* I. Atualizacao da planta (motor BLDC) */
             bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
 
             /* J. Log dos dados */
             fprintf(log_file,
-                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
+                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
                     "%.6f;%.6f;%.6f;%.6f;%d;%d;%d\n",
                     t, mode,
                     Vabc[0], Vabc[1], Vabc[2],
@@ -572,7 +604,7 @@ int main(int argc, char **argv)
                     i_d, i_q,
                     motor.Te,
                     motor.theta_r, motor.omega_r,
-                    iq_ref,
+                    iq_ref, 0. /*vd_ref*/, 0. /*vq_ref*/,
                     0. /*duty_a*/, 0. /*duty_b*/, 0. /*duty_c*/,
                     0. /*carrier*/,
                     0 /*gate_a*/, 0 /*gate_b*/, 0 /*gate_c*/);

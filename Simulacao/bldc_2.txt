@@ -8,15 +8,15 @@
 # ==========================================================
 
 # --- Parametros do motor ---
-R  = 0.053           # Ohm  - resistencia de armadura
-L  = 0.045e-3         # H    - indutancia de magnetizacao
+R  = 0.053          # Ohm  - resistencia de armadura
+L  = 0.045e-3       # H    - indutancia de magnetizacao
 M  = 0.0            # H    - indutancia mutua
-Ke = 0.0682     # V/(rad/s) - constante eletrica
+Ke = 0.0682         # V/(rad/s) - constante eletrica  (7.14 V/krpm) 
 J  = 1.8e-4         # kg.m^2 - momento de inercia
 B  = 1.2e-6         # coeficiente de amortecimento
 Tl = 0.0            # N.m  - torque de carga
 P  = 14             # numero de pares de polos
-Kt = 0.0682     # N.m/A - constante de torque
+Kt = 0.0682         # N.m/A - constante de torque
 
 # --- Parametros do SVPWM (chaveamento real do inversor) ---
 Fsw        = 10000   # Hz - frequencia de chaveamento
@@ -25,7 +25,7 @@ PwmSamples = 200    # passos finos de simulacao por periodo Ts
 
 # --- Parametros de tempo da simulacao ---
 Ti = 0.0                 # s - tempo inicial
-Tf = 0.25                 # s - tempo final
+Tf = 0.1                 # s - tempo final
 Dt = 1e-6                # s - passo de integracao explicito
                          # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
                          #  informe um valor > 0 para sobrescrever o
@@ -36,8 +36,8 @@ Dt = 1e-6                # s - passo de integracao explicito
 Vdc = 36.0               # V - tensao do barramento CC
 
 # --- Controladores PI ---
-KpOmega = 2.0            # ganho proporcional - malha de velocidade
-KiOmega = 0.5            # ganho integral      - malha de velocidade
+KpOmega = 1.0            # ganho proporcional - malha de velocidade
+KiOmega = 0.2            # ganho integral      - malha de velocidade
 KpId    = 3.0            # ganho proporcional - malha de corrente id
 KiId    = 0.8            # ganho integral      - malha de corrente id
 KpIq    = 3.0            # ganho proporcional - malha de corrente iq
