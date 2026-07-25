@@ -74,7 +74,7 @@
  * calculados em tempo de execucao em main() a partir de args.Vdc,
  * ja que Vdc agora e configuravel via CLI/arquivo de config. */
 
-#define PI_IQ_MAX 8
+#define PI_IQ_MAX 10
 #define PI_IQ_MIN (-PI_IQ_MAX)
 
 /* ========================================================================
@@ -143,7 +143,7 @@
  *   DEBUG
  * ==================================================================== */
 
-#define DEBUG 1
+#define DEBUG 0
 
 /* ========================================================================
  *   ARGUMENTOS DE LINHA DE COMANDO
@@ -382,9 +382,9 @@ int main(int argc, char **argv)
     double vdc_max = args.Vdc / sqrt(3);
     double vdc_min = -args.Vdc / sqrt(3);
 
-    double dtOmega = 5e-3;
-    double dtId = 100e-4;
-    double dtIq = 100e-4;
+    double dtOmega = 1e-3;
+    double dtId = (double)pwm.Ts;
+    double dtIq = (double)pwm.Ts;
 
     /* --------------------------------------------------------------
      *   REFERENCIAS
@@ -437,6 +437,17 @@ int main(int argc, char **argv)
     pi_controller_init(&pi_q, args.KpIq, args.KiIq, dtIq,
                        true, vdc_min, true, vdc_max);
 
+    /* Controle de amostragem de cada malha PI: cada controlador so
+     * roda no seu proprio periodo (dtOmega/dtId/dtIq), independente
+     * do passo fino de simulacao (dt). Entre ativacoes, o ultimo
+     * valor calculado e mantido (zero-order hold). */
+    double t_next_omega = (double)time_sim.t0;
+    double t_next_id = (double)time_sim.t0;
+    double t_next_iq = (double)time_sim.t0;
+
+    double iq_ref_hold = 0.0;
+    double vd_ref_hold = 0.0;
+    double vq_ref_hold = 0.0;
     /* --------------------------------------------------------------
      *   ARQUIVO DE LOG
      * -------------------------------------------------------------- */
@@ -506,7 +517,12 @@ int main(int argc, char **argv)
                 theta_e = motor.theta_r * (float)motor.P;
 
                 /* B. Malha externa de velocidade -> referencia de iq */
-                iq_ref = pi_controller_update(&pi_omega, omega_ref, motor.omega_r);
+                if ((double)t >= t_next_omega)
+                {
+                    iq_ref_hold = pi_controller_update(&pi_omega, omega_ref, motor.omega_r);
+                    t_next_omega += dtOmega;
+                }
+                iq_ref = iq_ref_hold;
 
                 /* C. Transformada de Clarke (abc -> alpha-beta) */
                 float i_alpha, i_beta;
@@ -517,8 +533,19 @@ int main(int argc, char **argv)
                 park_transform(i_alpha, i_beta, theta_e, &i_d, &i_q);
 
                 /* D. Malhas internas de corrente (PI em d e em q) */
-                vd_ref = pi_controller_update(&pi_d, id_ref, i_d);
-                vq_ref = pi_controller_update(&pi_q, iq_ref, i_q);
+                if ((double)t >= t_next_id)
+                {
+                    vd_ref_hold = pi_controller_update(&pi_d, id_ref, i_d);
+                    t_next_id += dtId;
+                }
+                vd_ref = vd_ref_hold;
+
+                if ((double)t >= t_next_iq)
+                {
+                    vq_ref_hold = pi_controller_update(&pi_q, iq_ref, i_q);
+                    t_next_iq += dtIq;
+                }
+                vq_ref = vq_ref_hold;
 
                 /* E. Transformada inversa de Park (dq -> alpha-beta) */
                 park_inverse_transform((float)vd_ref, (float)vq_ref, theta_e,
@@ -588,9 +615,9 @@ int main(int argc, char **argv)
 #endif
             theta_e = motor.theta_r * (float)motor.P;
 
-            Vabc[0] = vdc_max/sqrt(3) * sinf(theta_e + PHI_A);
-            Vabc[1] = vdc_max/sqrt(3) * sinf(theta_e + PHI_B);
-            Vabc[2] = vdc_max/sqrt(3) * sinf(theta_e + PHI_C);
+            Vabc[0] = vdc_max / sqrt(3) * sinf(theta_e + PHI_A);
+            Vabc[1] = vdc_max / sqrt(3) * sinf(theta_e + PHI_B);
+            Vabc[2] = vdc_max / sqrt(3) * sinf(theta_e + PHI_C);
             /* I. Atualizacao da planta (motor BLDC) */
             bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
 
