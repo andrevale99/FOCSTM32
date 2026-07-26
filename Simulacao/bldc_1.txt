@@ -25,7 +25,7 @@ PwmSamples = 75    # passos finos de simulacao por periodo Ts
 
 # --- Parametros de tempo da simulacao ---
 Ti = 0.0                 # s - tempo inicial
-Tf = 2.0                 # s - tempo final
+Tf = 0.5                 # s - tempo final
 Dt = 1e-6                # s - passo de integracao explicito
                          # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
                          #  informe um valor > 0 para sobrescrever o
@@ -35,12 +35,12 @@ Dt = 1e-6                # s - passo de integracao explicito
 Vdc = 24.0               # V - tensao do barramento CC
 
 # --- Controladores PI ---
-KpOmega = 0.1            # ganho proporcional - malha de velocidade
-KiOmega = 1.0            # ganho integral      - malha de velocidade
-KpId    = 0.01            # ganho proporcional - malha de corrente id
+KpOmega = 533.18            # ganho proporcional - malha de velocidade
+KiOmega = 33483.97            # ganho integral      - malha de velocidade
+KpId    = 998.2            # ganho proporcional - malha de corrente id
 KiId    = 0.1            # ganho integral      - malha de corrente id
-KpIq    = 0.017            # ganho proporcional - malha de corrente iq
-KiIq    = 82.41`            # ganho integral      - malha de corrente iq
+KpIq    = 0.323            # ganho proporcional - malha de corrente iq
+KiIq    = 998.2            # ganho integral      - malha de corrente iq
 
 # --- Referencia de velocidade ---
 rpm=10
