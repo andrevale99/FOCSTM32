@@ -44,7 +44,7 @@ KpIq    = 0.279            # ganho proporcional - malha de corrente iq
 KiIq    = 328.6            # ganho integral      - malha de corrente iq
 
 # --- Referencia de velocidade ---
-rpm=-456
+rpm=1230
 
 # --- Partida V/F em malha aberta ---
 # 1 (ou true/yes/on)  -> parte com rampa V/F em malha aberta (theta_e
