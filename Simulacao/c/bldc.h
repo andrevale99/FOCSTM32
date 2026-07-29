@@ -48,12 +48,12 @@ typedef struct _bldc
     /**
      * @brief Resistência dos enrolamentos, em ohms.
      */
-    float R;
+    const float R;
 
     /**
      * @brief Indutância própria dos enrolamentos, em henrys.
      */
-    float L;
+    const float L;
 
     /**
      * @brief Indutância mútua entre os enrolamentos, em henrys.
@@ -61,22 +61,22 @@ typedef struct _bldc
      * @note Atualmente este parâmetro é armazenado na estrutura,
      *       mas não é utilizado diretamente em @ref bldc_step().
      */
-    float M;
+    const float M;
 
     /**
      * @brief Constante da força contraeletromotriz.
      */
-    float Ke;
+    const float Ke;
 
     /**
      * @brief Momento de inércia do rotor, em kg.m².
      */
-    float J;
+    const float J;
 
     /**
      * @brief Coeficiente de atrito viscoso.
      */
-    float B;
+    const float B;
 
     /**
      * @brief Torque eletromagnético desenvolvido pelo motor, em N.m.
@@ -86,12 +86,12 @@ typedef struct _bldc
     /**
      * @brief Número de pares de polos.
      */
-    uint8_t P;
+    const uint8_t P;
 
     /**
      * @brief Constante de torque do motor.
      */
-    float Kt;
+    const float Kt;
 
     /**
      * @brief Posição angular elétrica do rotor, em radianos.
@@ -363,9 +363,9 @@ void bldc_step(float Vabc[JUST_THREE_PHASES],
     eabc[1] = motor->Ke * motor->omega_r * fabc[1];
     eabc[2] = motor->Ke * motor->omega_r * fabc[2];
 
-    diabc[0] = (Vabc[0] - motor->R * motor->iabc[0] - eabc[0]) / motor->L;
-    diabc[1] = (Vabc[1] - motor->R * motor->iabc[1] - eabc[1]) / motor->L;
-    diabc[2] = (Vabc[2] - motor->R * motor->iabc[2] - eabc[2]) / motor->L;
+    diabc[0] = (Vabc[0] - motor->R * motor->iabc[0] - eabc[0]) / (motor->L + motor->M);
+    diabc[1] = (Vabc[1] - motor->R * motor->iabc[1] - eabc[1]) / (motor->L + motor->M);
+    diabc[2] = (Vabc[2] - motor->R * motor->iabc[2] - eabc[2]) / (motor->L + motor->M);
 
     motor->iabc[0] += diabc[0] * time->dt;
     motor->iabc[1] += diabc[1] * time->dt;
