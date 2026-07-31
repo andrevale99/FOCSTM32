@@ -112,8 +112,8 @@
 #define DEFAULT_USE_VF_STARTUP 1
 
 /**
- * Flag de simualção para gerar a amlha aberta. Caso esteja utilizada,
- * as ondas que alimentarão o motor serão geradas intermanente no laço
+ * Flag de simualcao para gerar a amlha aberta. Caso esteja utilizada,
+ * as ondas que alimentarao o motor serao geradas intermanente no laco
  * de forma idel (onda senoidais), com amplitude +-Vdc
  */
 #define DEFAULT_USE_MALHA_ABERTA 0
@@ -174,7 +174,7 @@ typedef struct
     double KiIq;      /* ganho integral - malha de corrente iq             */
     double rpm;       /*referencia de velocidade*/
     int UseVfStartup; /* 1 = realiza partida V/F em malha aberta antes do FOC; 0 = FOC direto desde Ti */
-    int MalhaAberta;  /*Gera as onda de alimentação internamente e utiliza somente do atep do bldc*/
+    int MalhaAberta;  /*Gera as onda de alimentacao internamente e utiliza somente do atep do bldc*/
 } sim_args_t;
 
 /* Identificadores para opcoes de linha de comando que so existem na
@@ -462,12 +462,15 @@ int main(int argc, char **argv)
 
 #if !DEBUG
     fprintf(log_file,
-            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;omega_r;iq_ref;vd_ref;vq_ref;"
+            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;"
+            "omega_r;iq_ref;vd_ref;vq_ref;"
             "duty_a;duty_b;duty_c;carrier;gate_a;gate_b;gate_c\n");
 #else
     fprintf(log_file,
-            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;omega_r;iq_ref;vd_ref;vq_ref;"
-            "duty_a;duty_b;duty_c;carrier;gate_a;gate_b;gate_c;sat_omega;sat_d;sat_q\n");
+            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;"
+            "omega_r;iq_ref;vd_ref;vq_ref;"
+            "duty_a;duty_b;duty_c;carrier;gate_a;"
+            "gate_b;gate_c;sat_omega;sat_d;sat_q\n");
 #endif
 
     /* mode: 0 = partida V/F em malha aberta | 1 = FOC em malha fechada */
@@ -576,7 +579,8 @@ int main(int argc, char **argv)
             /* J. Log dos dados */
 #if !DEBUG
             fprintf(log_file,
-                    "%.6f;%d;%.3f;%.3f;%.3f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.3f;%.4f;%.4f;%.4f;"
+                    "%.6f;%d;%.3f;%.3f;%.3f;%.4f;%.4f;%.4f;%.4f"
+                    ";%.4f;%.4f;%.4f;%.3f;%.4f;%.4f;%.4f;"
                     "%.4f;%.4f;%.4f;%.4f;%d;%d;%d\n",
                     t, mode,
                     Vabc[0], Vabc[1], Vabc[2],
@@ -590,7 +594,8 @@ int main(int argc, char **argv)
                     gate_a, gate_b, gate_c);
 #else
             fprintf(log_file,
-                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
+                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
+                    "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
                     "%.6f;%.6f;%.6f;%.6f;%d;%d;%d;%d;%d;%d\n",
                     t, mode,
                     Vabc[0], Vabc[1], Vabc[2],
@@ -623,7 +628,8 @@ int main(int argc, char **argv)
 
             /* J. Log dos dados */
             fprintf(log_file,
-                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
+                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
+                    "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
                     "%.6f;%.6f;%.6f;%.6f;%d;%d;%d\n",
                     t, mode,
                     Vabc[0], Vabc[1], Vabc[2],

@@ -17,19 +17,19 @@ typedef struct
 {
   /**
 
-  * @brief Tensão do barramento CC.
+  * @brief Tensao do barramento CC.
     */
   float Vdc;
 
   /**
 
-  * @brief Período de chaveamento.
+  * @brief Periodo de chaveamento.
     */
   float Ts;
 
   /**
 
-  * @brief Frequência de chaveamento.
+  * @brief Frequencia de chaveamento.
     */
   float Hz;
 
@@ -37,7 +37,7 @@ typedef struct
 
 /**
 
-* @brief Resultado da identificação do setor do vetor espacial.
+* @brief Resultado da identificacao do setor do vetor espacial.
   */
 typedef struct
 {
@@ -49,7 +49,7 @@ typedef struct
 
   /**
 
-  * @brief Ângulo do vetor em radianos.
+  * @brief Angulo do vetor em radianos.
     */
   float angle;
 
@@ -87,7 +87,7 @@ static inline float svpwm_clamp(
 
 * @brief Inicializa o modulador SVPWM.
 *
-* A frequência ou o período de chaveamento deve ser informado.
+* A frequencia ou o periodo de chaveamento deve ser informado.
 *
 * Se Ts == 0:
 *
@@ -102,12 +102,12 @@ static inline float svpwm_clamp(
   ```
 *
 * @param svpwm Ponteiro para a estrutura do SVPWM.
-* @param Hz Frequência de chaveamento.
-* @param Ts Período de chaveamento.
-* @param Vdc Tensão do barramento CC.
+* @param Hz Frequencia de chaveamento.
+* @param Ts Periodo de chaveamento.
+* @param Vdc Tensao do barramento CC.
 *
-* @return true se a inicialização for válida.
-* @return false caso contrário.
+* @return true se a inicializacao for valida.
+* @return false caso contrario.
   */
 static inline bool svpwm_init(
     svpwm_t *svpwm,
@@ -151,7 +151,7 @@ static inline bool svpwm_init(
 
 * @brief Calcula os duty cycles utilizando SVPWM.
 *
-* A entrada é o vetor de tensão no referencial estacionário αβ:
+* A entrada e o vetor de tensao no referencial estacionario alphabeta:
 *
 * ```
   Valpha
@@ -160,7 +160,7 @@ static inline bool svpwm_init(
   Vbeta
   ```
 *
-* Primeiro é realizada a transformação inversa de Clarke:
+* Primeiro e realizada a transformacao inversa de Clarke:
 *
 * ```
   Va_ref = Valpha
@@ -186,7 +186,7 @@ static inline bool svpwm_init(
       - sqrt(3)/2 Vbeta
   ```
 *
-* Em seguida, é calculada a tensão de modo comum:
+* Em seguida, e calculada a tensao de modo comum:
 *
 * ```
   Voffset =
@@ -195,7 +195,7 @@ static inline bool svpwm_init(
       -0.5 (Vmax + Vmin)
   ```
 *
-* As tensões moduladas são:
+* As tensoes moduladas sao:
 *
 * ```
   Va_mod = Va_ref + Voffset
@@ -224,8 +224,8 @@ static inline bool svpwm_init(
   ```
 *
 * @param svpwm Ponteiro para a estrutura do SVPWM.
-* @param Valpha Componente alfa da tensão de referência.
-* @param Vbeta Componente beta da tensão de referência.
+* @param Valpha Componente alfa da tensao de referencia.
+* @param Vbeta Componente beta da tensao de referencia.
 * @param duty_a Ponteiro para o duty cycle da fase A.
 * @param duty_b Ponteiro para o duty cycle da fase B.
 * @param duty_c Ponteiro para o duty cycle da fase C.
@@ -253,14 +253,14 @@ static inline void svpwm_modulate(
 
   /*
 
-  * Transformação inversa de Clarke
+  * Transformacao inversa de Clarke
     */
   clarke_inverse_transform(Valpha, Vbeta,
                            &Va_ref, &Vb_ref, &Vc_ref);
 
   /*
 
-  * Maior e menor tensão
+  * Maior e menor tensao
     */
   Vmax = fmaxf(
       Va_ref,
@@ -272,14 +272,14 @@ static inline void svpwm_modulate(
 
   /*
 
-  * Tensão de modo comum
+  * Tensao de modo comum
     */
   Voffset =
       -0.5f * (Vmax + Vmin);
 
   /*
 
-  * Tensões moduladas
+  * Tensoes moduladas
     */
   Va_mod = Va_ref + Voffset;
   Vb_mod = Vb_ref + Voffset;
@@ -300,7 +300,7 @@ static inline void svpwm_modulate(
 
   /*
 
-  * Limitação dos duty cycles
+  * Limitacao dos duty cycles
     */
   *duty_a = svpwm_clamp(
       *duty_a,
@@ -320,9 +320,9 @@ static inline void svpwm_modulate(
 
 /**
 
-* @brief Obtém o setor do vetor espacial.
+* @brief Obtem o setor do vetor espacial.
 *
-* Recebe as componentes αβ do vetor:
+* Recebe as componentes alphabeta do vetor:
 *
 * ```
   alpha
@@ -331,16 +331,16 @@ static inline void svpwm_modulate(
   beta
   ```
 *
-* A magnitude é calculada por:
+* A magnitude e calculada por:
 *
 * ```
   magnitude =
   ```
 * ```
-      sqrt(alpha² + beta²)
+      sqrt(alpha2 + beta2)
   ```
 *
-* O ângulo é calculado por:
+* O angulo e calculado por:
 *
 * ```
   angle =
@@ -352,34 +352,34 @@ static inline void svpwm_modulate(
 * e normalizado para o intervalo:
 *
 * ```
-  0 <= angle < 2π
+  0 <= angle < 2pi
   ```
 *
 * Cada setor possui 60 graus:
 *
 * ```
-  Setor 1: 0°   <= θ < 60°
+  Setor 1: 0 graus   <= theta < 60 graus
   ```
 * ```
-  Setor 2: 60°  <= θ < 120°
+  Setor 2: 60 graus  <= theta < 120 graus
   ```
 * ```
-  Setor 3: 120° <= θ < 180°
+  Setor 3: 120 graus <= theta < 180 graus
   ```
 * ```
-  Setor 4: 180° <= θ < 240°
+  Setor 4: 180 graus <= theta < 240 graus
   ```
 * ```
-  Setor 5: 240° <= θ < 300°
+  Setor 5: 240 graus <= theta < 300 graus
   ```
 * ```
-  Setor 6: 300° <= θ < 360°
+  Setor 6: 300 graus <= theta < 360 graus
   ```
 *
 * @param alpha Componente alfa do vetor.
 * @param beta Componente beta do vetor.
 *
-* @return Estrutura contendo setor, ângulo e magnitude.
+* @return Estrutura contendo setor, angulo e magnitude.
   */
 static inline svpwm_sector_t svpwm_get_sector(
     float alpha,
@@ -396,14 +396,14 @@ static inline svpwm_sector_t svpwm_get_sector(
 
   /*
 
-  * Ângulo do vetor
+  * Angulo do vetor
     */
   result.angle =
       atan2f(beta, alpha);
 
   /*
 
-  * Normalização do ângulo
+  * Normalizacao do angulo
     */
   if (result.angle < 0.0f)
   {
@@ -412,14 +412,14 @@ static inline svpwm_sector_t svpwm_get_sector(
 
   /*
 
-  * Cálculo do setor
+  * Calculo do setor
     */
   result.sector =
       (int)(result.angle / (M_PI / 3.0f)) + 1;
 
   /*
 
-  * Limitação do setor
+  * Limitacao do setor
     */
   if (result.sector > 6)
   {
@@ -433,9 +433,9 @@ static inline svpwm_sector_t svpwm_get_sector(
 
 * @brief Gera a portadora triangular do PWM, normalizada entre 0 e 1.
 *
-* A portadora é simétrica (sobe e desce dentro de cada período Ts),
-* que é a forma classicamente usada para comparação com o duty cycle
-* em moduladores PWM de dois níveis (natural/regular sampling):
+* A portadora e simetrica (sobe e desce dentro de cada periodo Ts),
+* que e a forma classicamente usada para comparacao com o duty cycle
+* em moduladores PWM de dois niveis (natural/regular sampling):
 *
 * ```
   fase = (t mod Ts) / Ts   (0 <= fase < 1)
@@ -449,7 +449,7 @@ static inline svpwm_sector_t svpwm_get_sector(
   ```
 *
 * @param svpwm Ponteiro para a estrutura do SVPWM (usa svpwm->Ts).
-* @param t Instante de tempo absoluto da simulação [s].
+* @param t Instante de tempo absoluto da simulacao [s].
 *
 * @return Valor da portadora triangular, no intervalo [0, 1].
   */
@@ -469,19 +469,19 @@ static inline float svpwm_carrier(
 
 /**
 
-* @brief Compara o duty cycle de referência com a portadora triangular
-* para gerar o estado de chaveamento (0 ou 1) de um braço do inversor.
+* @brief Compara o duty cycle de referencia com a portadora triangular
+* para gerar o estado de chaveamento (0 ou 1) de um braco do inversor.
 *
-* Esta é a comparação real feita pelo hardware de PWM: enquanto o
-* duty de referência (saída de svpwm_modulate) estiver acima da
-* portadora instantânea, a chave superior do braço fica ligada
-* (estado 1 -> polo em Vdc); caso contrário, fica desligada
+* Esta e a comparacao real feita pelo hardware de PWM: enquanto o
+* duty de referencia (saida de svpwm_modulate) estiver acima da
+* portadora instantanea, a chave superior do braco fica ligada
+* (estado 1 -> polo em Vdc); caso contrario, fica desligada
 * (estado 0 -> polo em 0V).
 *
-* @param duty Duty cycle de referência do braço (0 a 1).
-* @param carrier Valor instantâneo da portadora triangular (0 a 1).
+* @param duty Duty cycle de referencia do braco (0 a 1).
+* @param carrier Valor instantaneo da portadora triangular (0 a 1).
 *
-* @return 1 se a chave superior estiver ligada, 0 caso contrário.
+* @return 1 se a chave superior estiver ligada, 0 caso contrario.
   */
 static inline int svpwm_gate_state(
     float duty,

@@ -8,68 +8,68 @@
 #include <math.h>
 
 /**
- * @brief Número de fases do motor BLDC.
+ * @brief Numero de fases do motor BLDC.
  */
 #define JUST_THREE_PHASES 3
 
 /**
- * @brief Uma revolução elétrica completa em radianos.
+ * @brief Uma revolucao eletrica completa em radianos.
  */
 #define TWO_PI (2 * M_PI)
 
 /**
- * @brief Posição angular da fase A.
+ * @brief Posicao angular da fase A.
  */
 #define PHI_A 0
 
 /**
- * @brief Posição angular da fase B.
+ * @brief Posicao angular da fase B.
  */
 #define PHI_B (float)(-TWO_PI / 3.0f)
 
 /**
- * @brief Posição angular da fase C.
+ * @brief Posicao angular da fase C.
  */
 #define PHI_C (float)(TWO_PI / 3.0f)
 
 /**
- * @brief Modelo de simulação do motor BLDC.
+ * @brief Modelo de simulacao do motor BLDC.
  *
- * Armazena os parâmetros elétricos e mecânicos do motor, bem como
- * as variáveis de estado utilizadas durante a simulação.
+ * Armazena os parametros eletricos e mecanicos do motor, bem como
+ * as variaveis de estado utilizadas durante a simulacao.
  */
 typedef struct _bldc
 {
     /**
-     * @brief Correntes das fases A, B e C, em ampères.
+     * @brief Correntes das fases A, B e C, em amperes.
      */
     float iabc[JUST_THREE_PHASES];
 
     /**
-     * @brief Resistência dos enrolamentos, em ohms.
+     * @brief Resistencia dos enrolamentos, em ohms.
      */
     const float R;
 
     /**
-     * @brief Indutância própria dos enrolamentos, em henrys.
+     * @brief Indutancia propria dos enrolamentos, em henrys.
      */
     const float L;
 
     /**
-     * @brief Indutância mútua entre os enrolamentos, em henrys.
+     * @brief Indutancia mutua entre os enrolamentos, em henrys.
      *
-     * @note Atualmente este parâmetro é armazenado na estrutura,
-     *       mas não é utilizado diretamente em @ref bldc_step().
+     * @note Atualmente este parametro e armazenado na estrutura,
+     *       mas nao e utilizado diretamente em @ref bldc_step().
      */
     const float M;
 
     /**
-     * @brief Constante da força contraeletromotriz.
+     * @brief Constante da forca contraeletromotriz.
      */
     const float Ke;
 
     /**
-     * @brief Momento de inércia do rotor, em kg.m².
+     * @brief Momento de inercia do rotor, em kg.m2.
      */
     const float J;
 
@@ -79,12 +79,12 @@ typedef struct _bldc
     const float B;
 
     /**
-     * @brief Torque eletromagnético desenvolvido pelo motor, em N.m.
+     * @brief Torque eletromagnetico desenvolvido pelo motor, em N.m.
      */
     float Te;
 
     /**
-     * @brief Número de pares de polos.
+     * @brief Numero de pares de polos.
      */
     const uint8_t P;
 
@@ -94,49 +94,49 @@ typedef struct _bldc
     const float Kt;
 
     /**
-     * @brief Posição angular elétrica do rotor, em radianos.
+     * @brief Posicao angular eletrica do rotor, em radianos.
      */
     float theta_e;
 
     /**
-     * @brief Posição angular mecânica do rotor, em radianos.
+     * @brief Posicao angular mecanica do rotor, em radianos.
      */
     float theta_r;
 
     /**
-     * @brief Velocidade angular mecânica, em rad/s.
+     * @brief Velocidade angular mecanica, em rad/s.
      */
     float omega_r;
 
     /**
-     * @brief Velocidade angular elétrica, em rad/s.
+     * @brief Velocidade angular eletrica, em rad/s.
      */
     float omega_e;
 
     /**
-     * @brief Arquivo utilizado para o registro dos dados da simulação.
+     * @brief Arquivo utilizado para o registro dos dados da simulacao.
      */
     FILE *log;
 
 } bldc_t;
 
 /**
- * @brief Configuração da simulação temporal.
+ * @brief Configuracao da simulacao temporal.
  */
 typedef struct _time_simulation
 {
     /**
-     * @brief Instante inicial da simulação, em segundos.
+     * @brief Instante inicial da simulacao, em segundos.
      */
     float t0;
 
     /**
-     * @brief Instante final da simulação, em segundos.
+     * @brief Instante final da simulacao, em segundos.
      */
     float tf;
 
     /**
-     * @brief Passo de integração numérica, em segundos.
+     * @brief Passo de integracao numerica, em segundos.
      */
     float dt;
 
@@ -145,15 +145,15 @@ typedef struct _time_simulation
 /**
  * @brief Calcula a forma de onda trapezoidal normalizada da FEM.
  *
- * Calcula uma função periódica de amplitude normalizada entre -1 e 1,
- * com formato trapezoidal, a partir da posição angular elétrica.
+ * Calcula uma funcao periodica de amplitude normalizada entre -1 e 1,
+ * com formato trapezoidal, a partir da posicao angular eletrica.
  *
- * @param[in] theta Posição angular elétrica, em radianos.
+ * @param[in] theta Posicao angular eletrica, em radianos.
  *
- * @return Valor normalizado da força contraeletromotriz no intervalo
+ * @return Valor normalizado da forca contraeletromotriz no intervalo
  *         aproximado de -1 a 1.
  *
- * @note O ângulo é normalizado para o intervalo [0, 2π).
+ * @note O angulo e normalizado para o intervalo [0, 2pi).
  */
 static float trapezoidal_back_emf(float theta)
 {
@@ -187,15 +187,15 @@ static float trapezoidal_back_emf(float theta)
 }
 
 /**
- * @brief Cria o arquivo de log e escreve o cabeçalho dos dados.
+ * @brief Cria o arquivo de log e escreve o cabecalho dos dados.
  *
  * Cria ou sobrescreve o arquivo especificado e escreve os nomes das
- * variáveis que serão registradas durante a simulação.
+ * variaveis que serao registradas durante a simulacao.
  *
  * @param[in] filename Nome do arquivo de log.
  *
- * @note Caso não seja possível criar o arquivo, uma mensagem de erro
- *       é exibida por meio de @c perror().
+ * @note Caso nao seja possivel criar o arquivo, uma mensagem de erro
+ *       e exibida por meio de @c perror().
  */
 void bldc_log_header(const char *filename)
 {
@@ -222,12 +222,12 @@ void bldc_log_header(const char *filename)
 /**
  * @brief Registra o estado atual do motor no arquivo de log.
  *
- * Escreve no arquivo associado ao motor os valores instantâneos
- * das correntes de fase, velocidade mecânica, posição mecânica
- * e torque eletromagnético.
+ * Escreve no arquivo associado ao motor os valores instantaneos
+ * das correntes de fase, velocidade mecanica, posicao mecanica
+ * e torque eletromagnetico.
  *
  * @param[in] motor Ponteiro para o modelo do motor BLDC.
- * @param[in] time Instante atual da simulação, em segundos.
+ * @param[in] time Instante atual da simulacao, em segundos.
  *
  * @warning O membro @p motor->log deve apontar para um arquivo
  *          previamente aberto para escrita.
@@ -250,7 +250,7 @@ void bldc_log_data(bldc_t *motor, float time)
  *
  * @param[in] omega Velocidade angular em rad/s.
  *
- * @return Velocidade em rotações por minuto (rpm).
+ * @return Velocidade em rotacoes por minuto (rpm).
  */
 float rads_to_rpm(float omega)
 {
@@ -260,7 +260,7 @@ float rads_to_rpm(float omega)
 /**
  * @brief Converte velocidade de rpm para velocidade angular.
  *
- * @param[in] rpm Velocidade em rotações por minuto.
+ * @param[in] rpm Velocidade em rotacoes por minuto.
  *
  * @return Velocidade angular em rad/s.
  */
@@ -270,60 +270,60 @@ float rpm_to_rads(float rpm)
 }
 
 /**
- * @brief Executa um passo de integração do modelo do motor BLDC.
+ * @brief Executa um passo de integracao do modelo do motor BLDC.
  *
- * Atualiza o estado elétrico e mecânico do motor durante um intervalo
- * de tempo definido pelo passo de simulação.
+ * Atualiza o estado eletrico e mecanico do motor durante um intervalo
+ * de tempo definido pelo passo de simulacao.
  *
- * A função realiza, nesta ordem:
+ * A funcao realiza, nesta ordem:
  *
- * 1. Cálculo da posição angular elétrica;
- * 2. Cálculo da velocidade angular elétrica;
- * 3. Cálculo da forma de onda da FEM;
- * 4. Cálculo das forças contraeletromotrizes das três fases;
- * 5. Cálculo das derivadas das correntes;
- * 6. Integração das correntes das fases;
- * 7. Cálculo do torque eletromagnético;
- * 8. Cálculo da aceleração angular;
- * 9. Atualização da velocidade mecânica;
- * 10. Atualização da posição mecânica.
+ * 1. Calculo da posicao angular eletrica;
+ * 2. Calculo da velocidade angular eletrica;
+ * 3. Calculo da forma de onda da FEM;
+ * 4. Calculo das forcas contraeletromotrizes das tres fases;
+ * 5. Calculo das derivadas das correntes;
+ * 6. Integracao das correntes das fases;
+ * 7. Calculo do torque eletromagnetico;
+ * 8. Calculo da aceleracao angular;
+ * 9. Atualizacao da velocidade mecanica;
+ * 10. Atualizacao da posicao mecanica.
  *
- * A integração numérica das variáveis de estado é realizada pelo
- * método de Euler explícito.
+ * A integracao numerica das variaveis de estado e realizada pelo
+ * metodo de Euler explicito.
  *
- * @param[in] Vabc Vetor de tensões aplicadas às fases A, B e C, em volts.
+ * @param[in] Vabc Vetor de tensoes aplicadas as fases A, B e C, em volts.
  * @param[in,out] motor Ponteiro para o modelo do motor BLDC.
- * @param[in] time Ponteiro para a configuração da simulação.
+ * @param[in] time Ponteiro para a configuracao da simulacao.
  * @param[in] Tl Torque de carga aplicado ao eixo, em N.m.
  * @param[in] trapezoidal_back_emf_flag
- *        Seleciona o formato da força contraeletromotriz:
+ *        Seleciona o formato da forca contraeletromotriz:
  *        - @c true: FEM trapezoidal;
  *        - @c false: FEM senoidal.
  *
- * @note A posição elétrica é calculada por:
+ * @note A posicao eletrica e calculada por:
  *       @f[
  *       \theta_e = P\theta_r
  *       @f]
  *
- * @note A velocidade elétrica é calculada por:
+ * @note A velocidade eletrica e calculada por:
  *       @f[
  *       \omega_e = P\omega_r
  *       @f]
  *
- * @note O modelo elétrico utiliza:
+ * @note O modelo eletrico utiliza:
  *       @f[
  *       \frac{di}{dt} =
  *       \frac{V - Ri - e}{L}
  *       @f]
  *
- * @note A dinâmica mecânica utiliza:
+ * @note A dinamica mecanica utiliza:
  *       @f[
  *       J\frac{d\omega_r}{dt}
  *       =
  *       T_e - T_L - B\omega_r
  *       @f]
  *
- * @warning Os ponteiros @p Vabc, @p motor e @p time devem ser válidos.
+ * @warning Os ponteiros @p Vabc, @p motor e @p time devem ser validos.
  */
 void bldc_step(float Vabc[JUST_THREE_PHASES],
                bldc_t *motor,

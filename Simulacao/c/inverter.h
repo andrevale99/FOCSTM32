@@ -6,13 +6,13 @@
 
 /**
 
-* @brief Estrutura responsável pela modelagem do inversor trifásico.
+* @brief Estrutura responsavel pela modelagem do inversor trifasico.
   */
 typedef struct
 {
     /**
 
-    * @brief Tensão do barramento CC.
+    * @brief Tensao do barramento CC.
       */
     float Vdc;
 
@@ -23,8 +23,8 @@ typedef struct
 * @brief Limita um valor entre um limite inferior e superior.
 *
 * @param value Valor a ser limitado.
-* @param min Valor mínimo.
-* @param max Valor máximo.
+* @param min Valor minimo.
+* @param max Valor maximo.
 *
 * @return Valor limitado ao intervalo especificado.
   */
@@ -48,9 +48,9 @@ static inline float inverter_clamp(
 
 /**
 
-* @brief Converte o duty cycle na tensão média do polo da fase.
+* @brief Converte o duty cycle na tensao media do polo da fase.
 *
-* A tensão média do polo é dada por:
+* A tensao media do polo e dada por:
 *
 * \f[
 * V_{pole} = duty \cdot V_{dc}
@@ -65,7 +65,7 @@ static inline float inverter_clamp(
 * @param inverter Ponteiro para a estrutura do inversor.
 * @param duty Duty cycle da fase.
 *
-* @return Tensão média do polo da fase.
+* @return Tensao media do polo da fase.
   */
 static inline float inverter_duty_to_pole_voltage(
     const inverter_t *inverter,
@@ -76,16 +76,16 @@ static inline float inverter_duty_to_pole_voltage(
 
 /**
 
-* @brief Calcula as tensões de fase aplicadas ao motor.
+* @brief Calcula as tensoes de fase aplicadas ao motor.
 *
-* Os duty cycles são inicialmente limitados ao intervalo:
+* Os duty cycles sao inicialmente limitados ao intervalo:
 *
 * \f[
 * 0 \leq duty \leq 1
 * \f]
 *
-* As tensões dos polos em relação ao terminal negativo do barramento
-* são calculadas por:
+* As tensoes dos polos em relacao ao terminal negativo do barramento
+* sao calculadas por:
 *
 * \f[
 * V_{a,pole} = duty_a V_{dc}
@@ -99,7 +99,7 @@ static inline float inverter_duty_to_pole_voltage(
 * V_{c,pole} = duty_c V_{dc}
 * \f]
 *
-* O ponto neutro virtual é calculado como:
+* O ponto neutro virtual e calculado como:
 *
 * \f[
 * V_n =
@@ -110,7 +110,7 @@ static inline float inverter_duty_to_pole_voltage(
 * }{3}
 * \f]
 *
-* As tensões de fase aplicadas ao motor são:
+* As tensoes de fase aplicadas ao motor sao:
 *
 * \f[
 * V_a = V_{a,pole} - V_n
@@ -128,7 +128,7 @@ static inline float inverter_duty_to_pole_voltage(
 * @param duty_a Duty cycle da fase A.
 * @param duty_b Duty cycle da fase B.
 * @param duty_c Duty cycle da fase C.
-* @param Vabc Vetor de saída contendo as tensões das fases A, B e C.
+* @param Vabc Vetor de saida contendo as tensoes das fases A, B e C.
   */
 static inline void inverter_output_voltage(
     const inverter_t *inverter,
@@ -139,7 +139,7 @@ static inline void inverter_output_voltage(
 {
     /*
 
-    * Limitação dos duty cycles
+    * Limitacao dos duty cycles
       */
     duty_a = inverter_clamp(
         duty_a,
@@ -158,7 +158,7 @@ static inline void inverter_output_voltage(
 
     /*
 
-    * Tensões dos polos em relação ao barramento negativo
+    * Tensoes dos polos em relacao ao barramento negativo
       */
     float Va_pole =
         inverter_duty_to_pole_voltage(
@@ -177,7 +177,7 @@ static inline void inverter_output_voltage(
 
     /*
 
-    * Tensão do ponto neutro virtual
+    * Tensao do ponto neutro virtual
       */
     float Vn =
         (Va_pole +
@@ -187,7 +187,7 @@ static inline void inverter_output_voltage(
 
     /*
 
-    * Tensões de fase
+    * Tensoes de fase
       */
     Vabc[0] = Va_pole - Vn;
     Vabc[1] = Vb_pole - Vn;
