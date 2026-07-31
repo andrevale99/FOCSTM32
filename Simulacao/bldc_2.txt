@@ -44,7 +44,7 @@ KpIq    = 0.279            # ganho proporcional - malha de corrente iq
 KiIq    = 328.6            # ganho integral      - malha de corrente iq
 
 # --- Referencia de velocidade ---
-rpm=55
+rpm=1250
 
 # --- Partida V/F em malha aberta ---
 # 1 (ou true/yes/on)  -> parte com rampa V/F em malha aberta (theta_e
@@ -55,7 +55,8 @@ rpm=55
 #                        fechada (theta_e = motor.theta_r * P) desde
 #                        Ti, igual ao fluxo anterior a implementacao
 #                        do V/F.
-VfStartup = 0
+#
+#VfStartup = 0
 
 # -- Partida em malha aberta --
 # Sera gerado ondas de alimentação ideias senoidais
