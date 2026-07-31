@@ -109,14 +109,14 @@
  * V/F: FOC em malha fechada desde t = Ti, com theta_e vindo direto
  * do modelo do motor. Configuravel via arquivo (VfStartup=0/1) ou
  * CLI (--vf-startup <0|1>). */
-#define DEFAULT_USE_VF_STARTUP 1
+#define DEFAULT_USE_VF_STARTUP 0
 
 /**
  * Flag de simualcao para gerar a amlha aberta. Caso esteja utilizada,
  * as ondas que alimentarao o motor serao geradas intermanente no laco
  * de forma idel (onda senoidais), com amplitude +-Vdc
  */
-#define DEFAULT_USE_MALHA_ABERTA 0
+#define DEFAULT_USE_MALHA_ABERTA 1
 
 /* ========================================================================
  *   GANHOS PADRAO DOS CONTROLADORES PI
@@ -462,12 +462,12 @@ int main(int argc, char **argv)
 
 #if !DEBUG
     fprintf(log_file,
-            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;"
+            "time;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;"
             "omega_r;iq_ref;vd_ref;vq_ref;"
             "duty_a;duty_b;duty_c;carrier;gate_a;gate_b;gate_c\n");
 #else
     fprintf(log_file,
-            "time;mode;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;"
+            "time;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;"
             "omega_r;iq_ref;vd_ref;vq_ref;"
             "duty_a;duty_b;duty_c;carrier;gate_a;"
             "gate_b;gate_c;sat_omega;sat_d;sat_q\n");
@@ -493,7 +493,6 @@ int main(int argc, char **argv)
         float i_d = 0.0f, i_q = 0.0f;
         double iq_ref = 0.0;
         double vd_ref = 0.0, vq_ref = 0.0;
-        int mode = 0;
 
         if (args.MalhaAberta == false)
         {
@@ -506,7 +505,9 @@ int main(int argc, char **argv)
                  * do modelo do motor: nao ha realimentacao de posicao nem
                  * de corrente nesta fase. O vetor de tensao alpha-beta e
                  * sintetizado diretamente por vf_startup_step(). */
-                mode = 0;
+                fprintf(stderr, "\nEM DESENVOLVIMENTO, COLOCAR FLAG EM 0\n");
+                return EXIT_FAILURE;
+
                 vf_startup_step(&vf, dt, &theta_e, &v_alpha, &v_beta);
             }
             else
@@ -514,7 +515,6 @@ int main(int argc, char **argv)
                 /* ----------------------------------------------------------
                  *   FASE 2: FOC EM MALHA FECHADA (controle vetorial)
                  * ---------------------------------------------------------- */
-                mode = 1;
 
                 /* A. Medicao (feedback do modelo) */
                 theta_e = motor.theta_r * (float)motor.P;
@@ -579,10 +579,10 @@ int main(int argc, char **argv)
             /* J. Log dos dados */
 #if !DEBUG
             fprintf(log_file,
-                    "%.6f;%d;%.3f;%.3f;%.3f;%.4f;%.4f;%.4f;%.4f"
+                    "%.6f;%.3f;%.3f;%.3f;%.4f;%.4f;%.4f;%.4f"
                     ";%.4f;%.4f;%.4f;%.3f;%.4f;%.4f;%.4f;"
                     "%.4f;%.4f;%.4f;%.4f;%d;%d;%d\n",
-                    t, mode,
+                    t,
                     Vabc[0], Vabc[1], Vabc[2],
                     motor.iabc[0], motor.iabc[1], motor.iabc[2],
                     i_d, i_q,
@@ -612,26 +612,20 @@ int main(int argc, char **argv)
         }
         else
         {
-#if !DEBUG
-            fprintf(stderr, "\nErro: Malha aberta em desenvolvimento\n"
-                            "Os arquivos de imagem serao gerados, mas nao havera nada\n\n");
-
-            break;
-#endif
             theta_e = motor.theta_r * (float)motor.P;
 
-            Vabc[0] = vdc_max / sqrt(3) * sinf(theta_e + PHI_A);
-            Vabc[1] = vdc_max / sqrt(3) * sinf(theta_e + PHI_B);
-            Vabc[2] = vdc_max / sqrt(3) * sinf(theta_e + PHI_C);
+            Vabc[0] = args.Vdc  * sinf(theta_e + PHI_A);
+            Vabc[1] = args.Vdc  * sinf(theta_e + PHI_B);
+            Vabc[2] = args.Vdc  * sinf(theta_e + PHI_C);
             /* I. Atualizacao da planta (motor BLDC) */
             bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
 
             /* J. Log dos dados */
             fprintf(log_file,
-                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
+                    "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
                     "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
                     "%.6f;%.6f;%.6f;%.6f;%d;%d;%d\n",
-                    t, mode,
+                    t,
                     Vabc[0], Vabc[1], Vabc[2],
                     motor.iabc[0], motor.iabc[1], motor.iabc[2],
                     i_d, i_q,
