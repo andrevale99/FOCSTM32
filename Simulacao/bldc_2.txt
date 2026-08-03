@@ -20,31 +20,35 @@ Kt = 0.0682         # N.m/A - constante de torque
 
 # --- Parametros do SVPWM (chaveamento real do inversor) ---
 Fsw        = 10000   # Hz - frequencia de chaveamento
-PwmSamples = 50    # passos finos de simulacao por periodo Ts
+PwmSamples = 200    # passos finos de simulacao por periodo Ts
                     # (maior = mais fiel ao chaveamento real, porem mais lento)
 
 # --- Parametros de tempo da simulacao ---
 Ti = 0.0                 # s - tempo inicial
-Tf = 0.2                 # s - tempo final
+Tf = 0.4                 # s - tempo final
 Dt = 1e-6                # s - passo de integracao explicito
                          # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
                          #  informe um valor > 0 para sobrescrever o
                          #  calculo automatico)
+                        
+# --- injecao da nova carga Tl ---
+Ttl = 0.3           # s - tempo de injecao da nova carga
+Tlnew = 0.1         # N.m - Torque da nova carga
 
 # --- Barramento CC ---
 # vdc d 36 V a 44 V
 Vdc = 36.0               # V - tensao do barramento CC
 
 # --- Controladores PI ---
-KpOmega = 1.63            # ganho proporcional - malha de velocidade
-KiOmega = 202.91            # ganho integral      - malha de velocidade
-KpId    = 0.279            # ganho proporcional - malha de corrente id
-KiId    = 328.6            # ganho integral      - malha de corrente id
-KpIq    = 0.279            # ganho proporcional - malha de corrente iq
-KiIq    = 328.6            # ganho integral      - malha de corrente iq
+KpOmega = 3.317     # ganho proporcional - malha de velocidade
+KiOmega = 833.562     # ganho integral - malha de velocidade
+KpId    = 0.283         # ganho proporcional - malha de corrente id
+KiId    = 333.009         # ganho integral - malha de corrente id
+KpIq    = 0.283         # ganho proporcional - malha de corrente iq
+KiIq    = 333.009         # ganho integral - malha de corrente iq
 
 # --- Referencia de velocidade ---
-rpm=1250
+rpm=1000
 
 # --- Partida V/F em malha aberta ---
 # 1 (ou true/yes/on)  -> parte com rampa V/F em malha aberta (theta_e
@@ -58,14 +62,15 @@ rpm=1250
 #
 #VfStartup = 0
 
-# -- Partida em malha aberta --
-# Sera gerado ondas de alimentação ideias senoidais
+# --- Partida em malha aberta ---
+# Sera gerado ondas de alimentacao ideais senoidais
 # que alimentara o motor.
-# A logica de acionamento do parametro é a mesma do
+# A logica de acionamento do parametro e a mesma do
 # parametro "VfStartup".
-# Somente uma das flags deve estar ativada: ou A MalhaAberta
-# ou a VfStartup, as duas com valor True/1/on nao pode.
+# Somente uma das flags deve estar ativada: ou MalhaAberta
+# ou VfStartup. As duas com valor True/1/on nao sao permitidas.
 #
+# A tenssao Vdc que irar ditar a velocidade do motor
 MalhaAberta = 0
 
 # --- Saida ---

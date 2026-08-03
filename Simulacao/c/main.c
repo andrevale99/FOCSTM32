@@ -59,6 +59,9 @@
 
 #define DEFAULT_TL 0.0f /* torque de carga (N.m) */
 
+#define DEFAULT_TLNEW_TIME 0.0f /*Tempo onde vai ser inserido a novar carga*/
+#define DEFAULT_TLNEW_NM 0.0f   /*Torque da nova carga*/
+
 #define DEFAULT_OUTPUT_FILE "closedloop_simulation.csv"
 
 /* ========================================================================
@@ -74,7 +77,7 @@
  * calculados em tempo de execucao em main() a partir de args.Vdc,
  * ja que Vdc agora e configuravel via CLI/arquivo de config. */
 
-#define PI_IQ_MAX 10
+#define PI_IQ_MAX 20
 #define PI_IQ_MIN (-PI_IQ_MAX)
 
 /* ========================================================================
@@ -140,12 +143,6 @@
 #define DEFAULT_SIM_DT 0.0f
 
 /* ========================================================================
- *   DEBUG
- * ==================================================================== */
-
-#define DEBUG 0
-
-/* ========================================================================
  *   ARGUMENTOS DE LINHA DE COMANDO
  * ==================================================================== */
 typedef struct
@@ -165,6 +162,8 @@ typedef struct
     double Ti;        /* tempo inicial da simulacao [s]                   */
     double Tf;        /* tempo final da simulacao [s]                     */
     double Dt;        /* passo de integracao explicito [s] (0 = automatico) */
+    double Ttl;       /* Tempo onde vai ser inserido a nova carga*/
+    double Tlnew;     /* Momento de inercia da carga inserida*/
     double Vdc;       /* tensao do barramento CC [V]                       */
     double KpOmega;   /* ganho proporcional - malha de velocidade          */
     double KiOmega;   /* ganho integral - malha de velocidade              */
@@ -190,7 +189,9 @@ enum
     OPT_KP_IQ,
     OPT_KI_IQ,
     OPT_VF_STARTUP,
-    OPT_MALHAABERTA_STARTUP
+    OPT_MALHAABERTA_STARTUP,
+    OPT_TTL,
+    OPT_TLNEW,
 };
 
 /* Interpreta strings booleanas aceitas em CLI/arquivo de config para
@@ -237,6 +238,8 @@ int main(int argc, char **argv)
     printf("  Ti = %.6f s\n", args.Ti);
     printf("  Tf = %.6f s\n", args.Tf);
     printf("  rpm = %.6f RPM\n", args.rpm);
+    printf("  Ttl = %.6f s\n", args.Ttl);
+    printf("  Tlnew = %.6f N.m\n", args.Tlnew);
     if (args.Dt > 0.0)
         printf("  Dt = %.9e s (explicito, sobrescreve o calculo automatico)\n", args.Dt);
     else
@@ -460,18 +463,10 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-#if !DEBUG
     fprintf(log_file,
             "time;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;"
             "omega_r;iq_ref;vd_ref;vq_ref;"
             "duty_a;duty_b;duty_c;carrier;gate_a;gate_b;gate_c\n");
-#else
-    fprintf(log_file,
-            "time;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;"
-            "omega_r;iq_ref;vd_ref;vq_ref;"
-            "duty_a;duty_b;duty_c;carrier;gate_a;"
-            "gate_b;gate_c;sat_omega;sat_d;sat_q\n");
-#endif
 
     /* mode: 0 = partida V/F em malha aberta | 1 = FOC em malha fechada */
 
@@ -482,9 +477,10 @@ int main(int argc, char **argv)
     {
         float t = time_sim.t0 + (float)((double)k * (double)dt);
         if (t > time_sim.tf)
-        {
             break;
-        }
+        
+        if (t >= args.Ttl)
+            args.Tl = args.Tlnew;
 
         /* Variaveis compartilhadas pelas duas fases (preenchidas de
          * um jeito ou de outro abaixo, e usadas no log ao final) */
@@ -577,7 +573,6 @@ int main(int argc, char **argv)
             bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
 
             /* J. Log dos dados */
-#if !DEBUG
             fprintf(log_file,
                     "%.6f;%.3f;%.3f;%.3f;%.4f;%.4f;%.4f;%.4f"
                     ";%.4f;%.4f;%.4f;%.3f;%.4f;%.4f;%.4f;"
@@ -592,31 +587,14 @@ int main(int argc, char **argv)
                     duty_a, duty_b, duty_c,
                     carrier,
                     gate_a, gate_b, gate_c);
-#else
-            fprintf(log_file,
-                    "%.6f;%d;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
-                    "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;"
-                    "%.6f;%.6f;%.6f;%.6f;%d;%d;%d;%d;%d;%d\n",
-                    t, mode,
-                    Vabc[0], Vabc[1], Vabc[2],
-                    motor.iabc[0], motor.iabc[1], motor.iabc[2],
-                    i_d, i_q,
-                    motor.Te,
-                    motor.theta_r, motor.omega_r,
-                    iq_ref, vd_ref, vq_ref,
-                    duty_a, duty_b, duty_c,
-                    carrier,
-                    gate_a, gate_b, gate_c,
-                    (int)pi_omega.saturated, (int)pi_d.saturated, (int)pi_q.saturated);
-#endif
         }
         else
         {
             theta_e = motor.theta_r * (float)motor.P;
 
-            Vabc[0] = args.Vdc  * sinf(theta_e + PHI_A);
-            Vabc[1] = args.Vdc  * sinf(theta_e + PHI_B);
-            Vabc[2] = args.Vdc  * sinf(theta_e + PHI_C);
+            Vabc[0] = args.Vdc * sinf(theta_e + PHI_A);
+            Vabc[1] = args.Vdc * sinf(theta_e + PHI_B);
+            Vabc[2] = args.Vdc * sinf(theta_e + PHI_C);
             /* I. Atualizacao da planta (motor BLDC) */
             bldc_step(Vabc, &motor, &time_sim, (float)args.Tl, false);
 
@@ -691,6 +669,8 @@ static void usage(const char *prog)
             "  Ti=0.0\n"
             "  Tf=1.0\n"
             "  Dt=0.0\n"
+            "  Ttl=0.0\n"
+            "  Tlnew=0.0\n"
             "  Vdc=120.0\n"
             "  KpOmega=2.0\n"
             "  KiOmega=1.5\n"
@@ -730,10 +710,12 @@ static void usage(const char *prog)
             "      --rpm               Referencia de velocidade em RPM       (default: %.2f)\n"
             "      --vf-startup <0|1> Realiza partida V/F em malha aberta antes do FOC\n"
             "                       (aceita 0/1, true/false, yes/no)         (default: %d)\n"
+            "      --Ttl    <v>    Tempo em segnudos onde vai ser inserido a nova carga (default: %.6f)\n"
+            "      --Tlnew <v>     Torque da nova carga inserida (default: %.6f)\n"
             "  -malha-aberta       Simula o motor em malha aberta com ondas senoidais\n"
             "                      de alimentacao (default=%d)\n"
             "  -h, --help          Mostra esta mensagem de ajuda\n\n"
-            "Observacao: a simulacao reproduz o chaveamento REAL do inversor\n"
+            "Observacao: a simulacao reproduz o chaveamento aproximado do inversor\n"
             "(comparacao do duty cycle com uma portadora triangular), nao um\n"
             "modelo de valor medio. Por isso, se -d/--dt nao for informado, o\n"
             "passo de integracao e derivado automaticamente de Fsw e PwmSamples\n"
@@ -741,7 +723,11 @@ static void usage(const char *prog)
             "resultado (ripple de corrente, de torque, etc). Se -d/--dt for\n"
             "informado explicitamente, ele e usado no lugar do calculo\n"
             "automatico (util para comparar com um passo fixo), mas um aviso\n"
-            "e emitido caso ele seja grande demais para resolver o chaveamento.\n",
+            "e emitido caso ele seja grande demais para resolver o chaveamento.\n"
+            "\n"
+            "Uma nova carga pode ser inserido passando como argumento\n"
+            "sendo \"Ttl\" o tempo onde vai inserido a nova carga\n"
+            "e \"Tlnew\" o torque da carga inserida.\n\n",
             prog,
             DEFAULT_OUTPUT_FILE,
             (double)DEFAULT_MOTOR_RS,
@@ -766,6 +752,8 @@ static void usage(const char *prog)
             (double)DEFAULT_KI_IQ,
             (double)DEFAULT_RPM_REFERENCE,
             DEFAULT_USE_VF_STARTUP,
+            DEFAULT_TLNEW_TIME,
+            DEFAULT_TLNEW_NM,
             DEFAULT_USE_MALHA_ABERTA);
 }
 
@@ -869,6 +857,10 @@ static int parse_config_file(const char *path, sim_args_t *args)
             args->UseVfStartup = parse_bool(v);
         else if (strcasecmp(key, "MalhaAberta") == 0)
             args->MalhaAberta = parse_bool(v);
+        else if (strcasecmp(key, "Ttl") == 0)
+            args->Ttl = atof(v);
+        else if (strcasecmp(key, "Tlnew") == 0)
+            args->Tlnew = atof(v);
         else if (strcasecmp(key, "file") == 0 || strcasecmp(key, "filename") == 0)
         {
             strncpy(args->filename, v, sizeof(args->filename) - 1);
@@ -906,6 +898,8 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
     args->Ti = (double)DEFAULT_SIM_TI;
     args->Tf = (double)DEFAULT_SIM_TF;
     args->Dt = (double)DEFAULT_SIM_DT;
+    args->Ttl = (double)DEFAULT_TLNEW_TIME;
+    args->Tlnew = (double)DEFAULT_TLNEW_NM;
     args->Vdc = (double)DEFAULT_VDC;
     args->KpOmega = (double)DEFAULT_KP_OMEGA;
     args->KiOmega = (double)DEFAULT_KI_OMEGA;
@@ -934,6 +928,8 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
             {"ti", required_argument, 0, 'i'},
             {"tf", required_argument, 0, 'e'},
             {"dt", required_argument, 0, 'd'},
+            {"Ttl", required_argument, 0, 's'},
+            {"Tlnew", required_argument, 0, 'T'},
             {"vdc", required_argument, 0, OPT_VDC},
             {"kp-omega", required_argument, 0, OPT_KP_OMEGA},
             {"ki-omega", required_argument, 0, OPT_KI_OMEGA},
@@ -1069,6 +1065,12 @@ static void parse_args(int argc, char **argv, sim_args_t *args)
             break;
         case OPT_MALHAABERTA_STARTUP:
             args->MalhaAberta = parse_bool(optarg);
+            break;
+        case OPT_TTL:
+            args->Ttl = atof(optarg);
+            break;
+        case OPT_TLNEW:
+            args->Tlnew = atof(optarg);
             break;
         case 'h':
             usage(argv[0]);
