@@ -122,7 +122,7 @@ def plotar_grupo(nome_janela, nome_pdf, titulo, ylabel, series,
 
 
 # ============================================================
-# 1. Tensoes de fase aplicadas ao motor
+# Tensoes de fase aplicadas ao motor
 # ============================================================
 
 plotar_grupo(
@@ -135,7 +135,7 @@ plotar_grupo(
 
 
 # ============================================================
-# 2. Correntes trifasicas
+# Correntes trifasicas
 # ============================================================
 
 plotar_grupo(
@@ -147,8 +147,9 @@ plotar_grupo(
 )
 
 
+
 # ============================================================
-# 3. Correntes dq
+# Correntes dq
 # ============================================================
 
 plotar_grupo(
@@ -161,7 +162,7 @@ plotar_grupo(
 
 
 # ============================================================
-# 4. Velocidade mecanica do rotor
+# Velocidade mecanica do rotor
 # ============================================================
 
 plotar_grupo(
@@ -174,8 +175,9 @@ plotar_grupo(
 )
 
 
+
 # ============================================================
-# 5. Torque eletromagnetico
+# Torque eletromagnetico
 # ============================================================
 
 plotar_grupo(
@@ -185,10 +187,12 @@ plotar_grupo(
     "Torque (N·m)",
     [("Te", "Te", "-")],
 )
+plt.show()
+
 
 
 # ============================================================
-# 6. Posicao angular do rotor
+# Posicao angular do rotor
 # ============================================================
 
 plotar_grupo(
@@ -201,7 +205,7 @@ plotar_grupo(
 
 
 # ============================================================
-# 7. Duty cycles do SVPWM
+# Duty cycles do SVPWM
 # ============================================================
 
 plotar_grupo(
@@ -216,7 +220,7 @@ plotar_grupo(
 
 
 # ============================================================
-# 8. Chaveamento real: portadora e estados das chaves (gate_a/b/c)
+# Chaveamento real: portadora e estados das chaves (gate_a/b/c)
 # ============================================================
 
 if colunas_faltando(["carrier", "gate_a", "gate_b", "gate_c"]) != \
@@ -259,7 +263,7 @@ else:
 
 
 # ============================================================
-# 9. Qualquer outra coluna numerica nao coberta acima
+# Qualquer outra coluna numerica nao coberta acima
 # ============================================================
 
 colunas_restantes = [
