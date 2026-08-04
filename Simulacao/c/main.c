@@ -15,14 +15,6 @@
  *   6) Inversor (duty cycles -> tensoes de fase Vabc)
  *   7) Planta (bldc_step) -> atualiza correntes, velocidade e posicao
  *   8) Log dos resultados em CSV
- *
- * Compilar:
- *   gcc -O2 -Wall main_closedloop.c -o closedloop -lm
- *
- * Executar:
- *   ./closedloop
- *
- * Gera o arquivo "closedloop_simulation.csv" com os resultados.
  */
 
 #include "main.h"
@@ -168,7 +160,8 @@ int main(int argc, char **argv)
         {
             .t0 = (float)args.Ti,
             .tf = (float)args.Tf,
-            .dt = dt};
+            .dt = dt,
+        };
 
     long total_steps =
         (long)((double)(time_sim.tf - time_sim.t0) / (double)dt + 0.5) + 1;
@@ -288,7 +281,7 @@ int main(int argc, char **argv)
         float t = time_sim.t0 + (float)((double)k * (double)dt);
         if (t > time_sim.tf)
             break;
-        
+
         if (t >= args.Ttl)
             args.Tl = args.Tlnew;
 
@@ -302,64 +295,47 @@ int main(int argc, char **argv)
 
         if (args.MalhaAberta == false)
         {
-            if (args.UseVfStartup && t < VF_STARTUP_DURATION)
+            /* ----------------------------------------------------------
+             *   FASE 1: FOC EM MALHA FECHADA (controle vetorial)
+             * ---------------------------------------------------------- */
+
+            /* A. Medicao (feedback do modelo) */
+            theta_e = motor.theta_r * (float)motor.P;
+
+            /* B. Malha externa de velocidade -> referencia de iq */
+            if ((double)t >= t_next_omega)
             {
-                /* ----------------------------------------------------------
-                 *   FASE 1: PARTIDA V/F EM MALHA ABERTA
-                 * ----------------------------------------------------------
-                 * theta_e eh sintetico (comeca em 0 rad / 0 graus) e nao vem
-                 * do modelo do motor: nao ha realimentacao de posicao nem
-                 * de corrente nesta fase. O vetor de tensao alpha-beta e
-                 * sintetizado diretamente por vf_startup_step(). */
-                fprintf(stderr, "\nEM DESENVOLVIMENTO, COLOCAR FLAG EM 0\n");
-                return EXIT_FAILURE;
-
-                vf_startup_step(&vf, dt, &theta_e, &v_alpha, &v_beta);
+                iq_ref_hold = pi_controller_update(&pi_omega, omega_ref, motor.omega_r);
+                t_next_omega += dtOmega;
             }
-            else
+            iq_ref = iq_ref_hold;
+
+            /* C. Transformada de Clarke (abc -> alpha-beta) */
+            float i_alpha, i_beta;
+            clarke_transform(motor.iabc[0], motor.iabc[1], motor.iabc[2],
+                             &i_alpha, &i_beta);
+
+            /* Transformada de Park (alpha-beta -> dq) */
+            park_transform(i_alpha, i_beta, theta_e, &i_d, &i_q);
+
+            /* D. Malhas internas de corrente (PI em d e em q) */
+            if ((double)t >= t_next_id)
             {
-                /* ----------------------------------------------------------
-                 *   FASE 2: FOC EM MALHA FECHADA (controle vetorial)
-                 * ---------------------------------------------------------- */
-
-                /* A. Medicao (feedback do modelo) */
-                theta_e = motor.theta_r * (float)motor.P;
-
-                /* B. Malha externa de velocidade -> referencia de iq */
-                if ((double)t >= t_next_omega)
-                {
-                    iq_ref_hold = pi_controller_update(&pi_omega, omega_ref, motor.omega_r);
-                    t_next_omega += dtOmega;
-                }
-                iq_ref = iq_ref_hold;
-
-                /* C. Transformada de Clarke (abc -> alpha-beta) */
-                float i_alpha, i_beta;
-                clarke_transform(motor.iabc[0], motor.iabc[1], motor.iabc[2],
-                                 &i_alpha, &i_beta);
-
-                /* Transformada de Park (alpha-beta -> dq) */
-                park_transform(i_alpha, i_beta, theta_e, &i_d, &i_q);
-
-                /* D. Malhas internas de corrente (PI em d e em q) */
-                if ((double)t >= t_next_id)
-                {
-                    vd_ref_hold = pi_controller_update(&pi_d, id_ref, i_d);
-                    t_next_id += dtId;
-                }
-                vd_ref = vd_ref_hold;
-
-                if ((double)t >= t_next_iq)
-                {
-                    vq_ref_hold = pi_controller_update(&pi_q, iq_ref, i_q);
-                    t_next_iq += dtIq;
-                }
-                vq_ref = vq_ref_hold;
-
-                /* E. Transformada inversa de Park (dq -> alpha-beta) */
-                park_inverse_transform((float)vd_ref, (float)vq_ref, theta_e,
-                                       &v_alpha, &v_beta);
+                vd_ref_hold = pi_controller_update(&pi_d, id_ref, i_d);
+                t_next_id += dtId;
             }
+            vd_ref = vd_ref_hold;
+
+            if ((double)t >= t_next_iq)
+            {
+                vq_ref_hold = pi_controller_update(&pi_q, iq_ref, i_q);
+                t_next_iq += dtIq;
+            }
+            vq_ref = vq_ref_hold;
+
+            /* E. Transformada inversa de Park (dq -> alpha-beta) */
+            park_inverse_transform((float)vd_ref, (float)vq_ref, theta_e,
+                                   &v_alpha, &v_beta);
 
             /* F. SVPWM: duty cycles de referencia (sinal modulante) */
             float duty_a, duty_b, duty_c;

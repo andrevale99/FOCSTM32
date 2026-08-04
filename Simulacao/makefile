@@ -6,7 +6,11 @@ LIBS = -I./c/lib/bldc \
     -I./c/lib/PIcontroller \
     -I./c/lib/svpwm \
     -I./c/lib/transforms \
-    -I./c/lib/VFstartup
+    -I./c/lib/VFstartup \
+
+INCLUDE = -I./c/include
+
+ALL_INCLUDE = $(LIBS) $(INCLUDE)
 
 OUT = c/simulation.out
 OUT_IMGS = img/
@@ -29,16 +33,16 @@ clear:
 	rm $(OUT_IMGS)*.pdf
 
 bldc_1_teste_closedloop:
-	$(GCC) $(SRC) $(LIBS) -o $(OUT) $(GCC_FLAGS) $(LIBS)
+	$(GCC) $(SRC) $(LIBS) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_1) -f $(bldc_1_file_csv)
 	python plot.py $(bldc_1_file_csv) img
 
 bldc_2_teste_closedloop:
-	$(GCC) $(SRC) -o $(OUT) $(GCC_FLAGS) $(LIBS)
+	$(GCC) $(SRC) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_2) -f $(bldc_2_file_csv)
 	python plot.py $(bldc_2_file_csv) img
 
 bldc_a2221_teste_closedloop:
-	$(GCC) $(SRC) -o $(OUT) $(GCC_FLAGS) $(LIBS)
+	$(GCC) $(SRC) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_a2212) -f $(bldc_a2221_file_csv)
 	python plot.py $(bldc_a2221_file_csv) img
