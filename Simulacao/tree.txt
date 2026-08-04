@@ -1,0 +1,46 @@
+.
+├── a2212.txt
+├── bldc_1.txt
+├── bldc_2.txt
+├── c
+│   ├── lib
+│   │   ├── bldc
+│   │   │   └── bldc.h
+│   │   ├── inverter
+│   │   │   └── inverter.h
+│   │   ├── PIcontroller
+│   │   │   └── PIcontroller.h
+│   │   ├── svpwm
+│   │   │   └── svpwm.h
+│   │   ├── transforms
+│   │   │   └── transforms.h
+│   │   └── VFstartup
+│   │       └── vf_startup.h
+│   ├── main.c
+│   ├── old
+│   │   ├── inverter.h
+│   │   ├── main_old.c
+│   │   └── SVPWM.h
+│   └── simulation.out
+├── ffts.py
+├── ganhos.py
+├── img
+├── makefile
+├── plot.py
+├── python
+│   ├── bldc.ipynb
+│   ├── bldc.py
+│   ├── Inverter.py
+│   ├── PIcontroller.py
+│   ├── __pycache__
+│   │   ├── bldc.cpython-312.pyc
+│   │   ├── Inverter.cpython-312.pyc
+│   │   ├── PIcontroller.cpython-312.pyc
+│   │   └── SVPWM.cpython-312.pyc
+│   ├── simulation_closedloop.py
+│   ├── SVPWM.py
+│   └── testes.ipynb
+├── README.md
+└── tree.txt
+
+13 directories, 31 files
