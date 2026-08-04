@@ -187,65 +187,6 @@ static float trapezoidal_back_emf(float theta)
 }
 
 /**
- * @brief Cria o arquivo de log e escreve o cabecalho dos dados.
- *
- * Cria ou sobrescreve o arquivo especificado e escreve os nomes das
- * variaveis que serao registradas durante a simulacao.
- *
- * @param[in] filename Nome do arquivo de log.
- *
- * @note Caso nao seja possivel criar o arquivo, uma mensagem de erro
- *       e exibida por meio de @c perror().
- */
-void bldc_log_header(const char *filename)
-{
-    FILE *file = fopen(filename, "w");
-
-    if (file == NULL)
-    {
-        perror("Erro ao criar o arquivo de log");
-        return;
-    }
-
-    fprintf(file,
-            "time;"
-            "ia;"
-            "ib;"
-            "ic;"
-            "omega_r;"
-            "theta_r;"
-            "Te\n");
-
-    fclose(file);
-}
-
-/**
- * @brief Registra o estado atual do motor no arquivo de log.
- *
- * Escreve no arquivo associado ao motor os valores instantaneos
- * das correntes de fase, velocidade mecanica, posicao mecanica
- * e torque eletromagnetico.
- *
- * @param[in] motor Ponteiro para o modelo do motor BLDC.
- * @param[in] time Instante atual da simulacao, em segundos.
- *
- * @warning O membro @p motor->log deve apontar para um arquivo
- *          previamente aberto para escrita.
- */
-void bldc_log_data(bldc_t *motor, float time)
-{
-    fprintf(motor->log,
-            "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f\n",
-            time,
-            motor->iabc[0],
-            motor->iabc[1],
-            motor->iabc[2],
-            motor->omega_r,
-            motor->theta_r,
-            motor->Te);
-}
-
-/**
  * @brief Converte velocidade angular de rad/s para rpm.
  *
  * @param[in] omega Velocidade angular em rad/s.
