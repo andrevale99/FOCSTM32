@@ -28,6 +28,32 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "mathtext.fontset": "cm",
+    "font.serif": ["cmr10", "DejaVu Serif", "serif"],
+    "axes.formatter.use_mathtext": True,
+
+    # Fontes
+    "font.size": 20,
+    "axes.titlesize": 22,
+    "axes.labelsize": 24,
+    "xtick.labelsize": 18,
+    "ytick.labelsize": 18,
+    "legend.fontsize": 18,
+    "figure.titlesize": 24,
+
+    # Espessura dos eixos
+    "axes.linewidth": 1.2,
+
+    # Tamanho dos ticks
+    "xtick.major.size": 6,
+    "ytick.major.size": 6,
+    "xtick.major.width": 1.2,
+    "ytick.major.width": 1.2,
+})
+
 # ============================================================
 # Parametros
 # ============================================================
@@ -122,7 +148,7 @@ def plotar_grupo(nome_janela, nome_pdf, titulo, ylabel, series,
 
 
 # ============================================================
-# Tensoes de fase aplicadas ao motor
+# 1. Tensoes de fase aplicadas ao motor
 # ============================================================
 
 plotar_grupo(
@@ -135,7 +161,7 @@ plotar_grupo(
 
 
 # ============================================================
-# Correntes trifasicas
+# 2. Correntes trifasicas
 # ============================================================
 
 plotar_grupo(
@@ -147,9 +173,8 @@ plotar_grupo(
 )
 
 
-
 # ============================================================
-# Correntes dq
+# 3. Correntes dq
 # ============================================================
 
 plotar_grupo(
@@ -162,7 +187,7 @@ plotar_grupo(
 
 
 # ============================================================
-# Velocidade mecanica do rotor
+# 4. Velocidade mecanica do rotor
 # ============================================================
 
 plotar_grupo(
@@ -170,14 +195,12 @@ plotar_grupo(
     "04_velocidade.pdf",
     "Velocidade mecânica do rotor",
     "Velocidade (rpm)",
-    [("omega_r_rpm", "ωr", "-")],
-    # linhas_ref=[(OMEGA_REF_RPM, "ωr_ref")],
+    [("rpm", r"$rpm_{ref}$", "-")],
 )
 
 
-
 # ============================================================
-# Torque eletromagnetico
+# 5. Torque eletromagnetico
 # ============================================================
 
 plotar_grupo(
@@ -185,108 +208,108 @@ plotar_grupo(
     "05_torque.pdf",
     "Torque eletromagnético",
     "Torque (N·m)",
-    [("Te", "Te", "-")],
-)
-plt.show()
-
-
-
-# ============================================================
-# Posicao angular do rotor
-# ============================================================
-
-plotar_grupo(
-    "Posicao angular",
-    "06_posicao_angular.pdf",
-    "Posição angular do rotor",
-    "Ângulo (rad)",
-    [("theta_r", "θr", "-")],
+    [(r"$T_e$", r"$T_e$", "-")],
 )
 
-
-# ============================================================
-# Duty cycles do SVPWM
-# ============================================================
-
-plotar_grupo(
-    "Duty cycles SVPWM",
-    "07_duty_cycles.pdf",
-    "Duty cycles de referência (SVPWM)",
-    "Duty cycle",
-    [("duty_a", "duty_a", "-"), ("duty_b", "duty_b", "-"),
-     ("duty_c", "duty_c", "-")],
-    ylim=(-0.05, 1.05),
-)
-
-
-# ============================================================
-# Chaveamento real: portadora e estados das chaves (gate_a/b/c)
-# ============================================================
-
-if colunas_faltando(["carrier", "gate_a", "gate_b", "gate_c"]) != \
-        ["carrier", "gate_a", "gate_b", "gate_c"]:
-
-    fig8, (ax8a, ax8b) = plt.subplots(
-        nrows=2, ncols=1, figsize=(12, 7), sharex=True,
-        num="Chaveamento real (portadora e gates)"
-    )
-
-    if "carrier" in colunas_disponiveis and "duty_a" in colunas_disponiveis:
-        ax8a.plot(dados["time"], dados["carrier"], label="portadora",
-                  color="gray")
-        ax8a.plot(dados["time"], dados["duty_a"], label="duty_a",
-                  linestyle="--")
-        colunas_usadas.update({"carrier"})
-    ax8a.set_title("Portadora triangular vs. duty cycle de referência (fase A)")
-    ax8a.set_ylabel("Amplitude")
-    ax8a.grid(True)
-    ax8a.legend()
-
-    for coluna, rotulo in [("gate_a", "gate_a"), ("gate_b", "gate_b"),
-                            ("gate_c", "gate_c")]:
-        if coluna in colunas_disponiveis:
-            ax8b.step(dados["time"], dados[coluna], label=rotulo,
-                      where="post")
-            colunas_usadas.add(coluna)
-    ax8b.set_title("Estado de chaveamento (0/1) por braço do inversor")
-    ax8b.set_xlabel("Tempo (s)")
-    ax8b.set_ylabel("Estado")
-    ax8b.set_ylim(-0.2, 1.2)
-    ax8b.grid(True)
-    ax8b.legend()
-
-    salvar_figura(fig8, "08_chaveamento_real.pdf")
-else:
-    print("Aviso: colunas de chaveamento (carrier/gate_a/b/c) nao "
-          "encontradas no CSV; janela pulada (CSV de uma simulacao "
-          "sem chaveamento real / versao antiga do main.c).")
-
-
-# ============================================================
-# Qualquer outra coluna numerica nao coberta acima
-# ============================================================
-
-colunas_restantes = [
-    c for c in dados.columns
-    if c not in colunas_usadas and pd.api.types.is_numeric_dtype(dados[c])
-]
-
-if colunas_restantes:
-    print(f"Colunas adicionais encontradas no CSV: {colunas_restantes} "
-          f"-- plotando em janelas extras.")
-    for i, coluna in enumerate(colunas_restantes, start=1):
-        plotar_grupo(
-            f"Outras variaveis - {coluna}",
-            f"09_{i:02d}_{coluna}.pdf",
-            f"Variável: {coluna}",
-            coluna,
-            [(coluna, coluna, "-")],
-        )
-
-
-# ============================================================
-# Exibe todas as janelas na tela (alem de ja terem sido salvas em PDF)
-# ============================================================
-
-print(f"\nTodos os graficos foram salvos em PDF na pasta '{pasta_saida}/'.")
 # plt.show()
+
+
+# # ============================================================
+# # 6. Posicao angular do rotor
+# # ============================================================
+
+# plotar_grupo(
+#     "Posicao angular",
+#     "06_posicao_angular.pdf",
+#     "Posição angular do rotor",
+#     "Ângulo (rad)",
+#     [("theta_r", "θr", "-")],
+# )
+
+
+# # ============================================================
+# # 7. Duty cycles do SVPWM
+# # ============================================================
+
+# plotar_grupo(
+#     "Duty cycles SVPWM",
+#     "07_duty_cycles.pdf",
+#     "Duty cycles de referência (SVPWM)",
+#     "Duty cycle",
+#     [("duty_a", "duty_a", "-"), ("duty_b", "duty_b", "-"),
+#      ("duty_c", "duty_c", "-")],
+#     ylim=(-0.05, 1.05),
+# )
+
+
+# # ============================================================
+# # 8. Chaveamento real: portadora e estados das chaves (gate_a/b/c)
+# # ============================================================
+
+# if colunas_faltando(["carrier", "gate_a", "gate_b", "gate_c"]) != \
+#         ["carrier", "gate_a", "gate_b", "gate_c"]:
+
+#     fig8, (ax8a, ax8b) = plt.subplots(
+#         nrows=2, ncols=1, figsize=(12, 7), sharex=True,
+#         num="Chaveamento real (portadora e gates)"
+#     )
+
+#     if "carrier" in colunas_disponiveis and "duty_a" in colunas_disponiveis:
+#         ax8a.plot(dados["time"], dados["carrier"], label="portadora",
+#                   color="gray")
+#         ax8a.plot(dados["time"], dados["duty_a"], label="duty_a",
+#                   linestyle="--")
+#         colunas_usadas.update({"carrier"})
+#     ax8a.set_title("Portadora triangular vs. duty cycle de referência (fase A)")
+#     ax8a.set_ylabel("Amplitude")
+#     ax8a.grid(True)
+#     ax8a.legend()
+
+#     for coluna, rotulo in [("gate_a", "gate_a"), ("gate_b", "gate_b"),
+#                             ("gate_c", "gate_c")]:
+#         if coluna in colunas_disponiveis:
+#             ax8b.step(dados["time"], dados[coluna], label=rotulo,
+#                       where="post")
+#             colunas_usadas.add(coluna)
+#     ax8b.set_title("Estado de chaveamento (0/1) por braço do inversor")
+#     ax8b.set_xlabel("Tempo (s)")
+#     ax8b.set_ylabel("Estado")
+#     ax8b.set_ylim(-0.2, 1.2)
+#     ax8b.grid(True)
+#     ax8b.legend()
+
+#     salvar_figura(fig8, "08_chaveamento_real.pdf")
+# else:
+#     print("Aviso: colunas de chaveamento (carrier/gate_a/b/c) nao "
+#           "encontradas no CSV; janela pulada (CSV de uma simulacao "
+#           "sem chaveamento real / versao antiga do main.c).")
+
+
+# # ============================================================
+# # 9. Qualquer outra coluna numerica nao coberta acima
+# # ============================================================
+
+# colunas_restantes = [
+#     c for c in dados.columns
+#     if c not in colunas_usadas and pd.api.types.is_numeric_dtype(dados[c])
+# ]
+
+# if colunas_restantes:
+#     print(f"Colunas adicionais encontradas no CSV: {colunas_restantes} "
+#           f"-- plotando em janelas extras.")
+#     for i, coluna in enumerate(colunas_restantes, start=1):
+#         plotar_grupo(
+#             f"Outras variaveis - {coluna}",
+#             f"09_{i:02d}_{coluna}.pdf",
+#             f"Variável: {coluna}",
+#             coluna,
+#             [(coluna, coluna, "-")],
+#         )
+
+
+# # ============================================================
+# # Exibe todas as janelas na tela (alem de ja terem sido salvas em PDF)
+# # ============================================================
+
+# print(f"\nTodos os graficos foram salvos em PDF na pasta '{pasta_saida}/'.")
+# # plt.show()
