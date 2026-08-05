@@ -15,7 +15,6 @@ void pi_controller_init(PIController *pid,
     pid->output_max = has_max ? output_max : PI_NO_LIMIT_MAX;
 
     pid->integral  = 0.0;
-    pid->saturated = false;
 }
 
 void pi_controller_reset(PIController *pid)
@@ -26,27 +25,24 @@ void pi_controller_reset(PIController *pid)
 double pi_controller_update(PIController *pid,
                                            double reference, double feedback)
 {
-    double error = reference - feedback;
-    double proportional = pid->Kp * error;
+    pid->error = reference - feedback;
+    double proportional = pid->Kp * pid->error;
 
-    pid->integral += pid->Ki * error * pid->Ts;
+    pid->integral += pid->Ki * pid->error * pid->Ts;
     double output = proportional + pid->integral;
 
-    pid->saturated = false;
 
     if (pid->has_min && output < pid->output_min) {
         output = pid->output_min;
-        pid->saturated = true;
-        if (error < 0.0) {
-            pid->integral -= pid->Ki * error * pid->Ts;
+        if (pid->error < 0.0) {
+            pid->integral -= pid->Ki * pid->error * pid->Ts;
         }
     }
 
     if (pid->has_max && output > pid->output_max) {
         output = pid->output_max;
-        pid->saturated = true;
-        if (error > 0.0) {
-            pid->integral -= pid->Ki * error * pid->Ts;
+        if (pid->error > 0.0) {
+            pid->integral -= pid->Ki * pid->error * pid->Ts;
         }
     }
 

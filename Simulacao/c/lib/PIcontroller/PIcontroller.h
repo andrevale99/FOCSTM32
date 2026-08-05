@@ -42,7 +42,8 @@ typedef struct
     bool has_max;
 
     double integral;
-    bool saturated; /* instrumentacao para diagnostico */
+
+    double error;
 } PIController;
 
 /* Inicializa o controlador.
