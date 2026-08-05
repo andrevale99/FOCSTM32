@@ -24,7 +24,7 @@
 
 int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
 {
-    printf("Parametros da simulacao:\n");
+    printf("\n\nParametros da simulacao:\n");
     printf("  arquivo de saida = %s\n", args->filename);
     printf("  R  = %.6f Ohm\n", args->R);
     printf("  L  = %.6f H\n", args->L);
@@ -35,28 +35,37 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
     printf("  Tl = %.6f N.m\n", args->Tl);
     printf("  P  = %d\n", args->P);
     printf("  Kt = %.6f N.m/A\n", args->Kt);
+    printf("\n");
     printf("  Fsw = %.1f Hz (chaveamento SVPWM real)\n", args->Fsw);
     printf("  PwmSamples = %d passos finos por periodo Ts\n", args->PwmSamples);
+    printf("\n");
     printf("  Ti = %.6f s\n", args->Ti);
     printf("  Tf = %.6f s\n", args->Tf);
+    printf("\n");
     printf("  rpm = %.6f RPM\n", args->rpm);
+    printf("\n");
     printf("  Ttl = %.6f s\n", args->Ttl);
     printf("  Tlnew = %.6f N.m\n", args->Tlnew);
+    printf("\n");
     if (args->Dt > 0.0)
         printf("  Dt = %.9e s (explicito, sobrescreve o calculo automatico)\n", args->Dt);
     else
         printf("  Dt = automatico (Ts / PwmSamples)\n");
+    printf("\n");
     printf("  Vdc = %.6f V\n", args->Vdc);
+    printf("\n");
     printf("  Controlador de velocidade: Kp = %.6f | Ki = %.6f\n",
            args->KpOmega, args->KiOmega);
     printf("  Controlador de corrente id: Kp = %.6f | Ki = %.6f\n",
            args->KpId, args->KiId);
     printf("  Controlador de corrente iq: Kp = %.6f | Ki = %.6f\n",
            args->KpIq, args->KiIq);
+    printf("\n");
     printf("  Partida V/F em malha aberta: %s\n\n",
            args->UseVfStartup ? "SIM" : "NAO (FOC direto desde Ti)");
     printf("  Partida em malha aberta: %s\n\n",
            args->MalhaAberta ? "SIM" : "NAO");
+    printf("\n\n");
 
     if (args->Fsw <= 0.0)
     {
@@ -375,7 +384,7 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
 
     fclose(log_file);
 
-    printf("Simulacao concluida. Resultados em \"%s\".\n", filename);
+    printf("\n\nSimulacao concluida. Resultados em \"%s\".\n\n", filename);
 
     return EXIT_SUCCESS;
 }

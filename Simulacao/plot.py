@@ -36,13 +36,13 @@ plt.rcParams.update({
     "axes.formatter.use_mathtext": True,
 
     # Fontes
-    "font.size": 20,
-    "axes.titlesize": 22,
-    "axes.labelsize": 24,
-    "xtick.labelsize": 18,
-    "ytick.labelsize": 18,
+    "font.size": 18,
+    "axes.titlesize": 18,
+    "axes.labelsize": 18,
+    "xtick.labelsize": 16,
+    "ytick.labelsize": 16,
     "legend.fontsize": 18,
-    "figure.titlesize": 24,
+    "figure.titlesize": 22,
 
     # Espessura dos eixos
     "axes.linewidth": 1.2,
@@ -150,14 +150,14 @@ def plotar_grupo(nome_janela, nome_pdf, titulo, ylabel, series,
 # ============================================================
 # 1. Tensoes de fase aplicadas ao motor
 # ============================================================
-
-plotar_grupo(
-    "Tensoes de fase",
-    "01_tensoes_fase.pdf",
-    "Tensões de fase aplicadas ao motor",
-    "Tensão (V)",
-    [("Va", "Va", "-"), ("Vb", "Vb", "-"), ("Vc", "Vc", "-")],
-)
+#
+#plotar_grupo(
+#    "Tensoes de fase",
+#    "01_tensoes_fase.pdf",
+#    "Tensões de fase aplicadas ao motor",
+#    "Tensão (V)",
+#    [("Va", "Va", "-"), ("Vb", "Vb", "-"), ("Vc", "Vc", "-")],
+#)
 
 
 # ============================================================
@@ -194,8 +194,8 @@ plotar_grupo(
     "Velocidade mecanica",
     "04_velocidade.pdf",
     "Velocidade mecânica do rotor",
-    "Velocidade (rpm)",
-    [("rpm", r"$rpm_{ref}$", "-")],
+    r"Velocidade ($\omega_r$)",
+    [(r"omega_r", r"$\omega_r$", "-")],
 )
 
 
@@ -208,7 +208,7 @@ plotar_grupo(
     "05_torque.pdf",
     "Torque eletromagnético",
     "Torque (N·m)",
-    [(r"$T_e$", r"$T_e$", "-")],
+    [("Te", "Te", "-")],
 )
 
 # plt.show()

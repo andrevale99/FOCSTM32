@@ -360,7 +360,7 @@ void parse_args(int argc, char **argv, sim_args_t *args)
 
     if (config_path[0] != '\0')
     {
-        printf("Carregando parametros do arquivo: %s\n", config_path);
+        printf("\n\nCarregando parametros do arquivo: %s\n", config_path);
         if (parse_config_file(config_path, args) != 0)
         {
             fprintf(stderr,

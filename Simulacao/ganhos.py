@@ -1,15 +1,15 @@
 import numpy as np
 
 # --- Parametros do motor ---
-R  = 0.053          # Ohm  - resistencia de armadura
-L  = 0.045e-3       # H    - indutancia de magnetizacao
-M  = 0.0            # H    - indutancia mutua
-Ke = 0.0682         # V/(rad/s) - constante eletrica  (7.14 V/krpm) 
-J  = 1.8e-4         # kg.m^2 - momento de inercia
-B  = 1.2e-6         # coeficiente de amortecimento
-Tl = 0.0            # N.m  - torque de carga
-P  = 14             # numero de pares de polos
-Kt = 0.0682         # N.m/A - constante de torque
+R  = 2.9              # Ohm       - resistencia de armadura
+L  = 0.0202           # H         - indutancia de magnetizacao
+M  = 0.0              # H         - indutancia mutua (nao usada em bldc_step)
+Ke = 1.1       # V/(rad/s) - constante eletrica (FCEM)
+J  = 1.0e-3           # kg.m^2    - momento de inercia do rotor
+B  = 1e-2             # N.m/(rad/s) - coeficiente de atrito viscoso
+Tl = 0.0              # N.m       - torque de carga aplicado ao eixo
+P  = 4               # -         - numero de pares de polos
+Kt = 1.1       # N.m/A     - constante de torque
 
 # --- Parametros do SVPWM (chaveamento real do inversor) ---
 Fsw        = 10000   # Hz - frequencia de chaveamento
