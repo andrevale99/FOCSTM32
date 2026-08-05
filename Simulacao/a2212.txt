@@ -62,7 +62,7 @@ rpm = 1234             # RPM (mecanico) - velocidade desejada
 #                        fechada (theta_e = motor.theta_r * P) desde
 #                        Ti, igual ao fluxo anterior a implementacao
 #                        do V/F.
-VfStartup = 0
+#VfStartup = 0
 
 # --- Partida em malha aberta ---
 # Sera gerado ondas de alimentacao ideais senoidais
