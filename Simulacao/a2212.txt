@@ -37,7 +37,7 @@ Dt = 1e-6             # s - passo de integracao explicito
 
 # --- injecao da nova carga Tl ---
 Ttl = 0.3           # s - tempo de injecao da nova carga
-Tlnew = 0.05         # N.m - Torque da nova carga
+Tlnew = 0.1         # N.m - Torque da nova carga
 
 # --- Barramento CC ---
 Vdc = 12              # V - tensao do barramento CC
@@ -51,7 +51,7 @@ KpIq    = 1.885         # ganho proporcional - malha de corrente iq
 KiIq    = 3141.593      # ganho integral - malha de corrente iq
 
 # --- Referencia de velocidade ---
-rpm = 1234             # RPM (mecanico) - velocidade desejada
+rpm = 1000             # RPM (mecanico) - velocidade desejada
 
 # --- Partida V/F em malha aberta ---
 # 1 (ou true/yes/on) -> parte com rampa V/F em malha aberta (theta_e

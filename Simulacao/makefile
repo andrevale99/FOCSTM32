@@ -32,17 +32,17 @@ clear:
 	rm *.csv
 	rm $(OUT_IMGS)*.pdf
 
-bldc_1_teste_closedloop:
+bldc_1_closedloop:
 	$(GCC) $(SRC) $(LIBS) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_1) -f $(bldc_1_file_csv)
 	python plot.py $(bldc_1_file_csv) img
 
-bldc_2_teste_closedloop:
+bldc_2_closedloop:
 	$(GCC) $(SRC) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_2) -f $(bldc_2_file_csv)
 	python plot.py $(bldc_2_file_csv) img
 
-bldc_a2221_teste_closedloop:
+bldc_a2221_closedloop:
 	$(GCC) $(SRC) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_a2212) -f $(bldc_a2221_file_csv)
 	python plot.py $(bldc_a2221_file_csv) img
