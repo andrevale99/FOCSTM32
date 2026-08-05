@@ -4,7 +4,7 @@
 /* ========================================================================
  *   PARAMETROS DA REDE / BARRAMENTO CC
  * ==================================================================== */
-#define DEFAULT_VDC 120.0f /* V */
+#define DEFAULT_VDC 220.0f /* V */
 
 /* ========================================================================
  *   PARAMETROS DO MOTOR
@@ -81,17 +81,17 @@
  * as ondas que alimentarao o motor serao geradas intermanente no laco
  * de forma idel (onda senoidais), com amplitude +-Vdc
  */
-#define DEFAULT_USE_MALHA_ABERTA 1
+#define DEFAULT_USE_MALHA_ABERTA 0
 
 /* ========================================================================
  *   GANHOS PADRAO DOS CONTROLADORES PI
  * ==================================================================== */
-#define DEFAULT_KP_OMEGA 2.0
-#define DEFAULT_KI_OMEGA 1.5
-#define DEFAULT_KP_ID 6.0
-#define DEFAULT_KI_ID 2.0
-#define DEFAULT_KP_IQ 6.0
-#define DEFAULT_KI_IQ 2.0
+#define DEFAULT_KP_OMEGA 0.01
+#define DEFAULT_KI_OMEGA 0.01
+#define DEFAULT_KP_ID 0.01
+#define DEFAULT_KI_ID 0.01
+#define DEFAULT_KP_IQ 0.01
+#define DEFAULT_KI_IQ 0.01
 
 /* ========================================================================
  *   PARAMETROS DA SIMULACAO
