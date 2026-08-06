@@ -40,12 +40,12 @@ Tlnew = 1         # N.m - Torque da nova carga
 Vdc = 36.0               # V - tensao do barramento CC
 
 # --- Controladores PI ---
-KpOmega = 3.317     # ganho proporcional - malha de velocidade
-KiOmega = 833.562     # ganho integral - malha de velocidade
-KpId    = 0.283         # ganho proporcional - malha de corrente id
-KiId    = 333.009         # ganho integral - malha de corrente id
-KpIq    = 0.283         # ganho proporcional - malha de corrente iq
-KiIq    = 333.009         # ganho integral - malha de corrente iq
+KpOmega = 1.658     # ganho proporcional - malha de velocidade
+KiOmega = 208.39     # ganho integral - malha de velocidade
+KpId    = 0.141         # ganho proporcional - malha de corrente id
+KiId    = 166.504         # ganho integral - malha de corrente id
+KpIq    = 0.141         # ganho proporcional - malha de corrente iq
+KiIq    = 166.504         # ganho integral - malha de corrente iq
 
 # --- Referencia de velocidade ---
 rpm=1500

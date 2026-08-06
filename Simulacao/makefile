@@ -31,6 +31,9 @@ bldc_a2221_file_csv = 2221_simulation.csv
 bldc_kumar = motors/bldc_kumar.txt
 bldc_kumar_file_csv = kumar_simulation.csv
 
+bldc_hani = motors/bldc_hani.txt
+bldc_hani_file_csv = hani_simulation.csv
+
 clear:
 	rm *.csv
 	rm $(OUT_IMGS)*.pdf
@@ -54,3 +57,8 @@ bldc_kumar_closedloop:
 	$(GCC) $(SRC) $(LIBS) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_kumar) -f $(bldc_kumar_file_csv)
 	python plot.py $(bldc_kumar_file_csv) img
+
+bldc_hani_closedloop:
+	$(GCC) $(SRC) $(LIBS) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
+	./$(OUT) -c $(bldc_hani) -f $(bldc_hani_file_csv)
+	python plot.py $(bldc_hani_file_csv) img
