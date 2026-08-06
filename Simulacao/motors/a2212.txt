@@ -24,12 +24,12 @@ Kt = 0.00909483       # N.m/A     - constante de torque
 
 # --- Parametros do SVPWM (chaveamento real do inversor) ---
 Fsw        = 10000    # Hz - frequencia de chaveamento
-PwmSamples = 200      # passos finos de simulacao por periodo Ts
+PwmSamples = 100      # passos finos de simulacao por periodo Ts
                       # (maior = mais fiel ao chaveamento real, porem mais lento)
 
 # --- Parametros de tempo da simulacao ---
 Ti = 0.0              # s - tempo inicial
-Tf = 0.4              # s - tempo final
+Tf = 0.6              # s - tempo final
 Dt = 1e-6             # s - passo de integracao explicito
                       # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
                       # informe um valor > 0 para sobrescrever o
@@ -51,7 +51,7 @@ KpIq    = 1.885         # ganho proporcional - malha de corrente iq
 KiIq    = 3141.593      # ganho integral - malha de corrente iq
 
 # --- Referencia de velocidade ---
-rpm = 1000             # RPM (mecanico) - velocidade desejada
+rpm = 1500             # RPM (mecanico) - velocidade desejada
 
 # --- Partida V/F em malha aberta ---
 # 1 (ou true/yes/on) -> parte com rampa V/F em malha aberta (theta_e

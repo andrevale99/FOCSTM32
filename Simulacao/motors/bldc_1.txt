@@ -20,12 +20,12 @@ Kt = 0.0255     # N.m/A - constante de torque
 
 # --- Parametros do SVPWM (chaveamento real do inversor) ---
 Fsw        = 10000   # Hz - frequencia de chaveamento
-PwmSamples = 200    # passos finos de simulacao por periodo Ts
+PwmSamples = 175    # passos finos de simulacao por periodo Ts
                     # (maior = mais fiel ao chaveamento real, porem mais lento)
 
 # --- Parametros de tempo da simulacao ---
 Ti = 0.0                 # s - tempo inicial
-Tf = 0.4                 # s - tempo final
+Tf = 0.5                 # s - tempo final
 Dt = 1e-6                # s - passo de integracao explicito
                          # (0.0 = automatico: dt = 1/Fsw / PwmSamples;
                          #  informe um valor > 0 para sobrescrever o
@@ -33,18 +33,18 @@ Dt = 1e-6                # s - passo de integracao explicito
 
 # --- injecao da nova carga Tl ---
 Ttl = 0.3           # s - tempo de injecao da nova carga
-Tlnew = 0.5         # N.m - Torque da nova carga
+Tlnew = 0.2         # N.m - Torque da nova carga
 
 # --- Barramento CC ---
 Vdc = 24.0               # V - tensao do barramento CC
 
 # --- Controladores PI ---
-KpOmega = 2133.819        # ganho proporcional - malha de velocidade
-KiOmega = 536287.21      # ganho integral - malha de velocidade
-KpId    = 0.327         # ganho proporcional - malha de corrente id
-KiId    = 1011.593        # ganho integral - malha de corrente id
-KpIq    = 0.327        # ganho proporcional - malha de corrente iq
-KiIq    = 1011.593         # ganho integral - malha de corrente iq
+KpOmega = 1066.91        # ganho proporcional - malha de velocidade
+KiOmega = 134071.803      # ganho integral - malha de velocidade
+KpId    = 0.163         # ganho proporcional - malha de corrente id
+KiId    = 505.796        # ganho integral - malha de corrente id
+KpIq    = 0.163        # ganho proporcional - malha de corrente iq
+KiIq    = 505.796         # ganho integral - malha de corrente iq
 
 # --- Referencia de velocidade ---
 rpm=20

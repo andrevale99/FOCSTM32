@@ -147,8 +147,61 @@ def plotar_grupo(nome_janela, nome_pdf, titulo, ylabel, series,
     salvar_figura(fig, nome_pdf)
 
 
+def plotar_janela_dupla(nome_janela, nome_pdf, subplots):
+    """
+    Cria uma unica figura (janela/PDF) com dois subplots empilhados
+    verticalmente, compartilhando o eixo do tempo.
+
+    subplots: lista com exatamente 2 dicionarios, cada um com as chaves:
+        titulo, ylabel, series (lista de tuplas (coluna, rotulo, estilo)),
+        linhas_ref (opcional), ylim (opcional)
+    """
+    fig, eixos = plt.subplots(
+        nrows=len(subplots), ncols=1, figsize=(12, 5 * len(subplots)),
+        sharex=True, num=nome_janela,
+    )
+
+    if len(subplots) == 1:
+        eixos = [eixos]
+
+    for ax, sp in zip(eixos, subplots):
+        series = sp["series"]
+        faltando = colunas_faltando([c for c, _, _ in series])
+        if len(faltando) == len(series):
+            print(f"Aviso: nenhuma coluna do grupo '{sp['titulo']}' "
+                  f"encontrada no CSV ({faltando}); subplot pulado.")
+            continue
+
+        for coluna, rotulo, estilo in series:
+            if coluna not in colunas_disponiveis:
+                print(f"Aviso: coluna '{coluna}' nao encontrada no CSV; "
+                      f"omitida do grafico '{sp['titulo']}'.")
+                continue
+            ax.plot(dados["time"], dados[coluna], label=rotulo,
+                     linestyle=estilo)
+            colunas_usadas.add(coluna)
+
+        linhas_ref = sp.get("linhas_ref")
+        if linhas_ref:
+            for valor, rotulo in linhas_ref:
+                ax.axhline(y=valor, color="black", linestyle="--",
+                           label=rotulo)
+
+        ax.set_title(sp["titulo"])
+        ax.set_ylabel(sp["ylabel"])
+        ylim = sp.get("ylim")
+        if ylim is not None:
+            ax.set_ylim(*ylim)
+        ax.grid(True)
+        ax.legend()
+
+    eixos[-1].set_xlabel("Tempo (s)")
+
+    salvar_figura(fig, nome_pdf)
+
+
 # ============================================================
-# 1. Tensoes de fase aplicadas ao motor
+# Tensoes de fase aplicadas ao motor
 # ============================================================
 #
 #plotar_grupo(
@@ -161,54 +214,52 @@ def plotar_grupo(nome_janela, nome_pdf, titulo, ylabel, series,
 
 
 # ============================================================
-# 2. Correntes trifasicas
+# 1. Torque eletromagnetico + Correntes dq (janela combinada)
 # ============================================================
 
-plotar_grupo(
-    "Correntes trifasicas",
-    "02_correntes_trifasicas.pdf",
-    "Correntes trifásicas",
-    "Corrente (A)",
-    [("ia", "ia", "-"), ("ib", "ib", "-"), ("ic", "ic", "-")],
+plotar_janela_dupla(
+    "Torque e correntes dq",
+    "01_torque_correntes_dq.pdf",
+    [
+        {
+            #"titulo": "Torque eletromagnético",
+            "titulo": None,
+            "ylabel": "Torque (N·m)",
+            "series": [("Te", "Te", "-")],
+        },
+        {
+            #"titulo": "Correntes no referencial dq",
+            "titulo": None,
+            "ylabel": "Corrente (A)",
+            "series": [("id", "id", "-"), ("iq", "iq", "-"),
+                       ("iq_ref", "iq_ref", "--")],
+        },
+    ],
 )
 
 
 # ============================================================
-# 3. Correntes dq
+# 2. Correntes trifasicas + Velocidade mecanica (janela combinada)
 # ============================================================
 
-plotar_grupo(
-    "Correntes dq",
-    "03_correntes_dq.pdf",
-    "Correntes no referencial dq",
-    "Corrente (A)",
-    [("id", "id", "-"), ("iq", "iq", "-"), ("iq_ref", "iq_ref", "--")],
-)
-
-
-# ============================================================
-# 4. Velocidade mecanica do rotor
-# ============================================================
-
-plotar_grupo(
-    "Velocidade mecanica",
-    "04_velocidade.pdf",
-    "Velocidade mecânica do rotor",
-    r"Velocidade ($\omega_r$)",
-    [(r"omega_r", r"$\omega_r$", "-")],
-)
-
-
-# ============================================================
-# 5. Torque eletromagnetico
-# ============================================================
-
-plotar_grupo(
-    "Torque eletromagnetico",
-    "05_torque.pdf",
-    "Torque eletromagnético",
-    "Torque (N·m)",
-    [("Te", "Te", "-")],
+plotar_janela_dupla(
+    "Correntes trifasicas e velocidade",
+    "02_correntes_trifasicas_velocidade.pdf",
+    [
+        {
+            #"titulo": "Correntes trifásicas",
+            "titulo": None,
+            "ylabel": "Corrente (A)",
+            "series": [("ia", "ia", "-"), ("ib", "ib", "-"),
+                       ("ic", "ic", "-")],
+        },
+        {
+            #"titulo": "Velocidade mecânica do rotor",
+            "titulo": None,
+            "ylabel": r"$\frac{rad}{s}$",
+            "series": [(r"omega_r", r"$\omega_r$", "-")],
+        },
+    ],
 )
 
 # plt.show()

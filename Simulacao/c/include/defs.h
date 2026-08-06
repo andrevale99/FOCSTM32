@@ -39,7 +39,7 @@
  * calculados em tempo de execucao em main() a partir de args.Vdc,
  * ja que Vdc agora e configuravel via CLI/arquivo de config. */
 
-#define PI_IQ_MAX 20
+#define PI_IQ_MAX 15
 #define PI_IQ_MIN (-PI_IQ_MAX)
 
 /* ========================================================================
