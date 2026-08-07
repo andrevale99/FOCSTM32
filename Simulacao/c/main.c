@@ -19,14 +19,16 @@
 
 #include "main.h"
 
-#include "simulations/simulations_bldc.h"
+#include "simulations/bldc_velocity_current_.h"
+#include "simulations/bldc_velocity.h"
 
 int main(int argc, char **argv)
 {
     sim_args_t args;
     parse_args(argc, argv, &args);
 
-    simulation_bldc_malha_corrente_velocidade(&args);
+    simulation_bldc_malha_velocidade(&args);
+    // simulation_bldc_malha_corrente_velocidade(&args);
 
     return EXIT_SUCCESS;
 }
