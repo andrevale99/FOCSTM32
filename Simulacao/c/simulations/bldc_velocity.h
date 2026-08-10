@@ -33,88 +33,8 @@
 #include "transforms.h"
 #include "bldc.h"
 
-
 int simulation_bldc_malha_velocidade(sim_args_t *args)
 {
- printf("\n\nParametros da simulacao:\n");
-    printf("  arquivo de saida = %s\n", args->filename);
-    printf("  R  = %.6f Ohm\n", args->R);
-    printf("  L  = %.6f H\n", args->L);
-    printf("  M  = %.6f H\n", args->M);
-    printf("  Ke = %.6f V/(rad/s)\n", args->Ke);
-    printf("  J  = %.9f kg.m^2\n", args->J);
-    printf("  B  = %.6f\n", args->B);
-    printf("  Tl = %.6f N.m\n", args->Tl);
-    printf("  P  = %d\n", args->P);
-    printf("  Kt = %.6f N.m/A\n", args->Kt);
-    printf("\n");
-    printf("  Fsw = %.1f Hz (chaveamento SVPWM real)\n", args->Fsw);
-    printf("  PwmSamples = %d passos finos por periodo Ts\n", args->PwmSamples);
-    printf("\n");
-    printf("  Ti = %.6f s\n", args->Ti);
-    printf("  Tf = %.6f s\n", args->Tf);
-    printf("\n");
-    printf("  rpm = %.6f RPM\n", args->rpm);
-    printf("\n");
-    printf("  Ttl = %.6f s\n", args->Ttl);
-    printf("  Tlnew = %.6f N.m\n", args->Tlnew);
-    printf("\n");
-    if (args->Dt > 0.0)
-        printf("  Dt = %.9e s (explicito, sobrescreve o calculo automatico)\n", args->Dt);
-    else
-        printf("  Dt = automatico (Ts / PwmSamples)\n");
-    printf("\n");
-    printf("  Vdc = %.6f V\n", args->Vdc);
-    printf("\n");
-    printf("  Controlador de velocidade: Kp = %.6f | Ki = %.6f\n",
-           args->KpOmega, args->KiOmega);
-    printf("  Controlador de corrente id: Kp = %.6f | Ki = %.6f\n",
-           args->KpId, args->KiId);
-    printf("  Controlador de corrente iq: Kp = %.6f | Ki = %.6f\n",
-           args->KpIq, args->KiIq);
-    printf("\n");
-    printf("  Partida V/F em malha aberta: %s\n\n",
-           args->UseVfStartup ? "SIM" : "NAO (FOC direto desde Ti)");
-    printf("  Partida em malha aberta: %s\n\n",
-           args->MalhaAberta ? "SIM" : "NAO");
-    printf("\n\n");
-
-    if (args->Fsw <= 0.0)
-    {
-        fprintf(stderr, "Erro: Fsw deve ser > 0.\n");
-        return EXIT_FAILURE;
-    }
-
-    if (args->PwmSamples < 2)
-    {
-        fprintf(stderr, "Erro: PwmSamples deve ser >= 2.\n");
-        return EXIT_FAILURE;
-    }
-
-    if (args->Tf <= args->Ti)
-    {
-        fprintf(stderr, "Erro: Tf deve ser maior que Ti.\n");
-        return EXIT_FAILURE;
-    }
-
-    if (args->Dt < 0.0)
-    {
-        fprintf(stderr, "Erro: Dt nao pode ser negativo.\n");
-        return EXIT_FAILURE;
-    }
-
-    if (args->Vdc <= 0.0)
-    {
-        fprintf(stderr, "Erro: Vdc deve ser > 0.\n");
-        return EXIT_FAILURE;
-    }
-
-    if (args->MalhaAberta && args->UseVfStartup)
-    {
-        fprintf(stderr, "Erro: Somente um dos dois deve estar ativado\n");
-        return EXIT_FAILURE;
-    }
-
     /* --------------------------------------------------------------
      *   OBJETOS DA PLANTA
      * -------------------------------------------------------------- */
@@ -221,7 +141,7 @@ int simulation_bldc_malha_velocidade(sim_args_t *args)
 
     pi_controller_init(&pi_omega, args->KpOmega, args->KiOmega, dtOmega,
                        true, PI_IQ_MIN, true, PI_IQ_MAX);
-                       
+
     /* Controle de amostragem de cada malha PI: cada controlador so
      * roda no seu proprio periodo (dtOmega/dtId/dtIq), independente
      * do passo fino de simulacao (dt). Entre ativacoes, o ultimo

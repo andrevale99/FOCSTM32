@@ -27,8 +27,10 @@ int main(int argc, char **argv)
     sim_args_t args;
     parse_args(argc, argv, &args);
 
-    simulation_bldc_malha_velocidade(&args);
-    // simulation_bldc_malha_corrente_velocidade(&args);
+    print_data_simulation(&args);
+
+    // simulation_bldc_malha_velocidade(&args);
+    simulation_bldc_malha_corrente_velocidade(&args);
 
     return EXIT_SUCCESS;
 }

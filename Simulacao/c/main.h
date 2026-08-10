@@ -18,6 +18,82 @@
 #include "structs.h"
 #include "defs.h"
 
+int print_data_simulation(sim_args_t *args)
+{
+    printf("\n\nParametros da simulacao:\n");
+    printf("  arquivo de saida = %s\n", args->filename);
+    printf("  R  = %.6f Ohm\n", args->R);
+    printf("  L  = %.6f H\n", args->L);
+    printf("  M  = %.6f H\n", args->M);
+    printf("  Ke = %.6f V/(rad/s)\n", args->Ke);
+    printf("  J  = %.9f kg.m^2\n", args->J);
+    printf("  B  = %.6f\n", args->B);
+    printf("  Tl = %.6f N.m\n", args->Tl);
+    printf("  P  = %d\n", args->P);
+    printf("  Kt = %.6f N.m/A\n", args->Kt);
+    printf("\n");
+    printf("  Fsw = %.1f Hz (chaveamento SVPWM real)\n", args->Fsw);
+    printf("  PwmSamples = %d passos finos por periodo Ts\n", args->PwmSamples);
+    printf("\n");
+    printf("  Ti = %.6f s\n", args->Ti);
+    printf("  Tf = %.6f s\n", args->Tf);
+    printf("\n");
+    printf("  rpm = %.6f RPM\n", args->rpm);
+    printf("\n");
+    printf("  Ttl = %.6f s\n", args->Ttl);
+    printf("  Tlnew = %.6f N.m\n", args->Tlnew);
+    printf("\n");
+    if (args->Dt > 0.0)
+        printf("  Dt = %.9e s (explicito, sobrescreve o calculo automatico)\n", args->Dt);
+    else
+        printf("  Dt = automatico (Ts / PwmSamples)\n");
+    printf("\n");
+    printf("  Vdc = %.6f V\n", args->Vdc);
+    printf("\n");
+    printf("  Controlador de velocidade: Kp = %.6f | Ki = %.6f\n",
+           args->KpOmega, args->KiOmega);
+    printf("  Controlador de corrente id: Kp = %.6f | Ki = %.6f\n",
+           args->KpId, args->KiId);
+    printf("  Controlador de corrente iq: Kp = %.6f | Ki = %.6f\n",
+           args->KpIq, args->KiIq);
+    printf("\n");
+    printf("  Partida em malha aberta: %s\n\n",
+           args->MalhaAberta ? "SIM" : "NAO");
+    printf("\n\n");
+
+    if (args->Fsw <= 0.0)
+    {
+        fprintf(stderr, "Erro: Fsw deve ser > 0.\n");
+        return EXIT_FAILURE;
+    }
+
+    if (args->PwmSamples < 2)
+    {
+        fprintf(stderr, "Erro: PwmSamples deve ser >= 2.\n");
+        return EXIT_FAILURE;
+    }
+
+    if (args->Tf <= args->Ti)
+    {
+        fprintf(stderr, "Erro: Tf deve ser maior que Ti.\n");
+        return EXIT_FAILURE;
+    }
+
+    if (args->Dt < 0.0)
+    {
+        fprintf(stderr, "Erro: Dt nao pode ser negativo.\n");
+        return EXIT_FAILURE;
+    }
+
+    if (args->Vdc <= 0.0)
+    {
+        fprintf(stderr, "Erro: Vdc deve ser > 0.\n");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 /* Interpreta strings booleanas aceitas em CLI/arquivo de config para
  * a flag de partida V/F: "1"/"0", "true"/"false", "yes"/"no",
  * "on"/"off" (case-insensitive). Qualquer outra coisa cai no atoi(). */
@@ -70,7 +146,6 @@ void usage(const char *prog)
             "  KiId=2.0\n"
             "  KpIq=6.0\n"
             "  KiIq=2.0\n"
-            "  VfStartup=1\n"
             "  file=saida.csv\n"
             "(linhas em branco ou iniciadas com '#' sao ignoradas)\n\n"
             "Opcoes:\n"
@@ -100,8 +175,6 @@ void usage(const char *prog)
             "      --kp-iq <v>     Ganho proporcional - malha de corrente iq (default: %.6f)\n"
             "      --ki-iq <v>     Ganho integral - malha de corrente iq     (default: %.6f)\n"
             "      --rpm               Referencia de velocidade em RPM       (default: %.2f)\n"
-            "      --vf-startup <0|1> Realiza partida V/F em malha aberta antes do FOC\n"
-            "                       (aceita 0/1, true/false, yes/no)         (default: %d)\n"
             "      --Ttl    <v>    Tempo em segnudos onde vai ser inserido a nova carga (default: %.6f)\n"
             "      --Tlnew <v>     Torque da nova carga inserida (default: %.6f)\n"
             "  -malha-aberta       Simula o motor em malha aberta com ondas senoidais\n"
@@ -143,7 +216,6 @@ void usage(const char *prog)
             (double)DEFAULT_KP_IQ,
             (double)DEFAULT_KI_IQ,
             (double)DEFAULT_RPM_REFERENCE,
-            DEFAULT_USE_VF_STARTUP,
             DEFAULT_TLNEW_TIME,
             DEFAULT_TLNEW_NM,
             DEFAULT_USE_MALHA_ABERTA);
@@ -245,8 +317,6 @@ int parse_config_file(const char *path, sim_args_t *args)
             args->KiIq = atof(v);
         else if (strcasecmp(key, "rpm") == 0)
             args->rpm = atof(v);
-        else if (strcasecmp(key, "VfStartup") == 0)
-            args->UseVfStartup = parse_bool(v);
         else if (strcasecmp(key, "MalhaAberta") == 0)
             args->MalhaAberta = parse_bool(v);
         else if (strcasecmp(key, "Ttl") == 0)
@@ -299,7 +369,6 @@ void parse_args(int argc, char **argv, sim_args_t *args)
     args->KiId = (double)DEFAULT_KI_ID;
     args->KpIq = (double)DEFAULT_KP_IQ;
     args->KiIq = (double)DEFAULT_KI_IQ;
-    args->UseVfStartup = DEFAULT_USE_VF_STARTUP;
     args->MalhaAberta = DEFAULT_USE_MALHA_ABERTA;
 
     static struct option long_options[] =
@@ -329,7 +398,6 @@ void parse_args(int argc, char **argv, sim_args_t *args)
             {"ki-id", required_argument, 0, OPT_KI_ID},
             {"kp-iq", required_argument, 0, OPT_KP_IQ},
             {"ki-iq", required_argument, 0, OPT_KI_IQ},
-            {"vf-startup", required_argument, 0, OPT_VF_STARTUP},
             {"malha-aberta", required_argument, 0, OPT_MALHAABERTA_STARTUP},
             {"help", no_argument, 0, 'h'},
             {0, 0, 0, 0}};
@@ -451,9 +519,6 @@ void parse_args(int argc, char **argv, sim_args_t *args)
             break;
         case OPT_KI_IQ:
             args->KiIq = atof(optarg);
-            break;
-        case OPT_VF_STARTUP:
-            args->UseVfStartup = parse_bool(optarg);
             break;
         case OPT_MALHAABERTA_STARTUP:
             args->MalhaAberta = parse_bool(optarg);

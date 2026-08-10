@@ -31,7 +31,6 @@ typedef struct
     double KpIq;      /* ganho proporcional - malha de corrente iq         */
     double KiIq;      /* ganho integral - malha de corrente iq             */
     double rpm;       /*referencia de velocidade*/
-    int UseVfStartup; /* 1 = realiza partida V/F em malha aberta antes do FOC; 0 = FOC direto desde Ti */
     int MalhaAberta;  /*Gera as onda de alimentacao internamente e utiliza somente do atep do bldc*/
 } sim_args_t;
 
@@ -47,7 +46,6 @@ enum
     OPT_KI_ID,
     OPT_KP_IQ,
     OPT_KI_IQ,
-    OPT_VF_STARTUP,
     OPT_MALHAABERTA_STARTUP,
     OPT_TTL,
     OPT_TLNEW,
