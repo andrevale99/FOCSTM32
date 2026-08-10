@@ -30,6 +30,7 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
     bldc_t motor =
         {
             .iabc = {0.0f, 0.0f, 0.0f},
+			.eabc = {0.0f, 0.0f, 0.0f},
 
             .R = (float)args->R,
             .L = (float)args->L,
@@ -48,8 +49,6 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
 
             .omega_r = 0.0f,
             .omega_e = 0.0f,
-
-            .log = NULL,
         };
 
     svpwm_t pwm;
@@ -167,9 +166,8 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
     }
 
     fprintf(log_file,
-            "time;Va;Vb;Vc;ia;ib;ic;id;iq;Te;theta_r;"
-            "omega_r;iq_ref;vd_ref;vq_ref;"
-            "duty_a;duty_b;duty_c;carrier;gate_a;gate_b;gate_c\n");
+            "time;Va;Vb;Vc;ia;ib;ic;ea;eb;ec;id;iq;Te;theta_r;"
+            "omega_r;iq_ref;vd_ref;vq_ref\n");
 
     /* --------------------------------------------------------------
      *   LACO DE SIMULACAO
@@ -186,7 +184,7 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
         /* Variaveis compartilhadas pelas duas fases (preenchidas de
          * um jeito ou de outro abaixo, e usadas no log ao final) */
         float Vabc[3];
-        float v_alpha, v_beta, theta_e;
+        float v_alpha, v_beta;
         float i_d = 0.0f, i_q = 0.0f;
         double iq_ref = 0.0;
         double vd_ref = 0.0, vq_ref = 0.0;
@@ -196,7 +194,7 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
          * ---------------------------------------------------------- */
 
         /* A. Medicao (feedback do modelo) */
-        theta_e = motor.theta_r * (float)motor.P;
+        motor.theta_e = motor.theta_r * (float)motor.P;
 
         /* B. Malha externa de velocidade -> referencia de iq */
         if ((double)t >= t_next_omega)
@@ -212,7 +210,7 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
                          &i_alpha, &i_beta);
 
         /* Transformada de Park (alpha-beta -> dq) */
-        park_transform(i_alpha, i_beta, theta_e, &i_d, &i_q);
+        park_transform(i_alpha, i_beta, motor.theta_e, &i_d, &i_q);
 
         /* D. Malhas internas de corrente (PI em d e em q) */
         if ((double)t >= t_next_id)
@@ -230,7 +228,7 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
         vq_ref = vq_ref_hold;
 
         /* E. Transformada inversa de Park (dq -> alpha-beta) */
-        park_inverse_transform((float)vd_ref, (float)vq_ref, theta_e,
+        park_inverse_transform((float)vd_ref, (float)vq_ref, motor.theta_e,
                                &v_alpha, &v_beta);
 
         /* F. SVPWM: duty cycles de referencia (sinal modulante) */
@@ -256,19 +254,17 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
 
         /* J. Log dos dados */
         fprintf(log_file,
-                "%.6f;%.3f;%.3f;%.3f;%.4f;%.4f;%.4f;%.4f"
-                ";%.4f;%.4f;%.4f;%.3f;%.4f;%.4f;%.4f;"
-                "%.4f;%.4f;%.4f;%.4f;%d;%d;%d\n",
+                "%.6f;%.3f;%.3f;%.3f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f"
+                ";%.4f;%.4f;%.4f;%.3f;%.4f;%.4f;%.4f\n",
                 t,
                 Vabc[0], Vabc[1], Vabc[2],
                 motor.iabc[0], motor.iabc[1], motor.iabc[2],
+				motor.eabc[0], motor.eabc[1], motor.eabc[2],
                 i_d, i_q,
                 motor.Te,
                 motor.theta_r, motor.omega_r,
-                iq_ref, vd_ref, vq_ref,
-                duty_a, duty_b, duty_c,
-                carrier,
-                gate_a, gate_b, gate_c);
+                iq_ref, vd_ref, vq_ref);
+                
     }
 
     fclose(log_file);

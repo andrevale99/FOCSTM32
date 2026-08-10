@@ -41,11 +41,6 @@
 typedef struct _bldc
 {
     /**
-     * @brief Correntes das fases A, B e C, em amperes.
-     */
-    float iabc[JUST_THREE_PHASES];
-
-    /**
      * @brief Resistencia dos enrolamentos, em ohms.
      */
     const float R;
@@ -79,11 +74,6 @@ typedef struct _bldc
     const float B;
 
     /**
-     * @brief Torque eletromagnetico desenvolvido pelo motor, em N.m.
-     */
-    float Te;
-
-    /**
      * @brief Numero de pares de polos.
      */
     const uint8_t P;
@@ -92,6 +82,22 @@ typedef struct _bldc
      * @brief Constante de torque do motor.
      */
     const float Kt;
+    
+    /**
+     * @brief Correntes das fases A, B e C, em amperes.
+     */
+    float iabc[JUST_THREE_PHASES];
+    
+    /**
+     * @brief Tensoes induzidas ea, eb e ec, em Volts.
+     */
+    float eabc[JUST_THREE_PHASES];
+
+
+    /**
+     * @brief Torque eletromagnetico desenvolvido pelo motor, em N.m.
+     */
+    float Te;
 
     /**
      * @brief Posicao angular eletrica do rotor, em radianos.
@@ -112,11 +118,6 @@ typedef struct _bldc
      * @brief Velocidade angular eletrica, em rad/s.
      */
     float omega_e;
-
-    /**
-     * @brief Arquivo utilizado para o registro dos dados da simulacao.
-     */
-    FILE *log;
 
 } bldc_t;
 

@@ -61,7 +61,6 @@ void bldc_step(float Vabc[JUST_THREE_PHASES],
                bool trapezoidal_back_emf_flag)
 {
     float fabc[JUST_THREE_PHASES] = {0};
-    float eabc[JUST_THREE_PHASES] = {0};
     float diabc[JUST_THREE_PHASES] = {0};
     float domega_r = 0;
 
@@ -88,13 +87,13 @@ void bldc_step(float Vabc[JUST_THREE_PHASES],
         fabc[2] = -sinf(motor->theta_e + PHI_C);
     }
 
-    eabc[0] = motor->Ke * motor->omega_r * fabc[0];
-    eabc[1] = motor->Ke * motor->omega_r * fabc[1];
-    eabc[2] = motor->Ke * motor->omega_r * fabc[2];
+    motor->eabc[0] = motor->Ke * motor->omega_r * fabc[0];
+    motor->eabc[1] = motor->Ke * motor->omega_r * fabc[1];
+    motor->eabc[2] = motor->Ke * motor->omega_r * fabc[2];
 
-    diabc[0] = (Vabc[0] - motor->R * motor->iabc[0] - eabc[0]) / (motor->L + motor->M);
-    diabc[1] = (Vabc[1] - motor->R * motor->iabc[1] - eabc[1]) / (motor->L + motor->M);
-    diabc[2] = (Vabc[2] - motor->R * motor->iabc[2] - eabc[2]) / (motor->L + motor->M);
+    diabc[0] = (Vabc[0] - motor->R * motor->iabc[0] - motor->eabc[0]) / (motor->L + motor->M);
+    diabc[1] = (Vabc[1] - motor->R * motor->iabc[1] - motor->eabc[1]) / (motor->L + motor->M);
+    diabc[2] = (Vabc[2] - motor->R * motor->iabc[2] - motor->eabc[2]) / (motor->L + motor->M);
 
     motor->iabc[0] += diabc[0] * time->dt;
     motor->iabc[1] += diabc[1] * time->dt;

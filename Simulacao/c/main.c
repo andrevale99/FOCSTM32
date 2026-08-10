@@ -20,7 +20,7 @@
 #include "main.h"
 
 #include "simulations/bldc_velocity_current_.h"
-#include "simulations/bldc_velocity.h"
+#include "simulations/bldc_malha_aberta.h"
 
 int main(int argc, char **argv)
 {
@@ -29,8 +29,10 @@ int main(int argc, char **argv)
 
     print_data_simulation(&args);
 
-    // simulation_bldc_malha_velocidade(&args);
-    simulation_bldc_malha_corrente_velocidade(&args);
+    if(args.MalhaAberta == false)
+    	simulation_bldc_malha_corrente_velocidade(&args);
+    else
+ 	simulation_bldc_malha_aberta(&args);
 
     return EXIT_SUCCESS;
 }
