@@ -19,7 +19,7 @@ Ke = 0.00909483       # V/(rad/s) - constante eletrica (FCEM)
 J  = 1.0e-4           # kg.m^2    - momento de inercia do rotor
 B  = 5e-5             # N.m/(rad/s) - coeficiente de atrito viscoso
 Tl = 0.0              # N.m       - torque de carga aplicado ao eixo
-P  = 14               # -         - numero de pares de polos
+P  = 7               # -         - numero de pares de polos
 Kt = 0.00909483       # N.m/A     - constante de torque
 
 # --- Parametros do SVPWM (chaveamento real do inversor) ---
@@ -53,26 +53,10 @@ KiIq    = 3141.593      # ganho integral - malha de corrente iq
 # --- Referencia de velocidade ---
 rpm = 1500             # RPM (mecanico) - velocidade desejada
 
-# --- Partida V/F em malha aberta ---
-# 1 (ou true/yes/on) -> parte com rampa V/F em malha aberta (theta_e
-#                       sintetico, iniciando em 0 rad) e depois comuta
-#                       para FOC em malha fechada. E o comportamento
-#                       default caso esta chave nem seja informada.
-# 0 (ou false/no/off) -> pula a partida V/F: roda o FOC em malha
-#                        fechada (theta_e = motor.theta_r * P) desde
-#                        Ti, igual ao fluxo anterior a implementacao
-#                        do V/F.
-#VfStartup = 0
-
 # --- Partida em malha aberta ---
-# Sera gerado ondas de alimentacao ideais senoidais
-# que alimentara o motor.
-# A logica de acionamento do parametro e a mesma do
-# parametro "VfStartup".
-# Somente uma das flags deve estar ativada: ou MalhaAberta
-# ou VfStartup. As duas com valor True/1/on nao sao permitidas.
-#
-# A tenssao Vdc que irar ditar a velocidade do motor
+# true/yes/on
+# false/no/off
+# Partida com Fonte de alimentação senoidal
 MalhaAberta = 0
 
 # --- Saida ---
