@@ -1,5 +1,8 @@
 GCC = gcc
+PYTHON=python3
+
 MAIN = c/main.c
+PLOT = graficos.py
 
 LIBS = -I./c/lib/bldc \
     -I./c/lib/inverter \
@@ -44,29 +47,30 @@ clear:
 bldc_1_closedloop:
 	$(GCC) $(SRC) $(LIBS) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_1) -f $(bldc_1_file_csv)
-	python plot.py $(bldc_1_file_csv) img
+	$(PYTHON) $(PLOT) $(bldc_1_file_csv) $(OUT_IMGS)
 
 bldc_2_closedloop:
 	$(GCC) $(SRC) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_2) -f $(bldc_2_file_csv)
-	python plot.py $(bldc_2_file_csv) img
+	$(PYTHON) $(PLOT) $(bldc_2_file_csv) $(OUT_IMGS)
+
 
 bldc_a2221_closedloop:
 	$(GCC) $(SRC) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_a2212) -f $(bldc_a2221_file_csv)
-	python plot.py $(bldc_a2221_file_csv) img
+	$(PYTHON) $(PLOT) $(bldc_a2221_file_csv) $(OUT_IMGS)
 
 bldc_kumar_closedloop:
 	$(GCC) $(SRC) $(LIBS) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_kumar) -f $(bldc_kumar_file_csv)
-	python plot.py $(bldc_kumar_file_csv) img
+	$(PYTHON) $(PLOT) $(bldc_kumar_file_csv) $(OUT_IMGS)
 
 bldc_hani_closedloop:
 	$(GCC) $(SRC) $(LIBS) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_hani) -f $(bldc_hani_file_csv)
-	python plot.py $(bldc_hani_file_csv) img
+	$(PYTHON) $(PLOT) $(bldc_hani_file_csv) $(OUT_IMGS)
 
 bldc_ahmed_closedloop:
 	$(GCC) $(SRC) $(LIBS) -o $(OUT) $(GCC_FLAGS) $(ALL_INCLUDE)
 	./$(OUT) -c $(bldc_ahmed) -f $(bldc_ahmed_file_csv)
-	python plot.py $(bldc_ahmed_file_csv) img
+	$(PYTHON) $(PLOT) $(bldc_ahmed_file_csv) $(OUT_IMGS)
