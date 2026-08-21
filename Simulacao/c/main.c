@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     if(args.MalhaAberta == false)
     	simulation_bldc_malha_corrente_velocidade(&args);
     else
- 	simulation_bldc_malha_aberta(&args);
+ 		simulation_bldc_malha_aberta(&args);
 
     return EXIT_SUCCESS;
 }
