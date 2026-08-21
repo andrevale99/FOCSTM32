@@ -10,6 +10,8 @@ LIBS = -I./c/lib/bldc \
     -I./c/lib/svpwm \
     -I./c/lib/transforms \
     -I./c/lib/VFstartup \
+	-I./c/lib/progressbar \
+
 
 INCLUDE = -I./c/include
 
