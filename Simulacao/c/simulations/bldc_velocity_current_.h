@@ -21,6 +21,7 @@
 #include "inverter.h"
 #include "transforms.h"
 #include "bldc.h"
+#include "progressbar.h"
 
 int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
 {
@@ -168,6 +169,12 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
     fprintf(log_file,
             "time;Va;Vb;Vc;ia;ib;ic;ea;eb;ec;id;iq;Te;theta_r;"
             "omega_r;iq_ref;vd_ref;vq_ref\n");
+	/* --------------------------------------------------------------
+     *   PROGRESS BAR 
+     * -------------------------------------------------------------- */
+
+	progress_bar_t pb;
+	progress_bar_init(&pb, time_sim.t0, time_sim.tf, time_sim.dt);
 
     /* --------------------------------------------------------------
      *   LACO DE SIMULACAO
@@ -252,6 +259,8 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
         /* I. Atualizacao da planta (motor BLDC) */
         bldc_step(Vabc, &motor, &time_sim, (float)args->Tl, false);
 
+		progress_bar_update(&pb, t);
+
         /* J. Log dos dados */
         fprintf(log_file,
                 "%.6f;%.3f;%.3f;%.3f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f"
@@ -266,6 +275,8 @@ int simulation_bldc_malha_corrente_velocidade(sim_args_t *args)
                 iq_ref, vd_ref, vq_ref);
                 
     }
+
+	progress_bar_finish(&pb);
 
     fclose(log_file);
 
