@@ -64,7 +64,6 @@ void bldc_step(float Vabc[JUST_THREE_PHASES],
     float diabc[JUST_THREE_PHASES] = {0};
     float domega_r = 0;
 
-    motor->theta_e = motor->P * motor->theta_r;
     motor->theta_e = fmodf(motor->P * motor->theta_r, TWO_PI);
 
     if (motor->theta_e < 0.0f)
